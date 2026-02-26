@@ -39,12 +39,12 @@ o	Physical testing of various unique or undertested scientific and/or social ide
 
 # Other Us
 ## Architecture Overview
-| Layer | Technology | Purpose |
-|-------|-----------|---------|
-| Frontend | Flet 0.80.5 (Python) | Cross-platform desktop/web/mobile GUI |
-| Backend | FastAPI + Uvicorn | REST API server |
-| Storage | Redis 6.x | User data, session state, OAuth state |
-| Auth | JWT + OAuth2 | Email/password, Google, GitHub login |
+| Layer 	| Technology 			| Purpose 								|
+|-----------|-----------------------|---------------------------------------|
+| Frontend 	| Flet 0.80.5 (Python) 	| Cross-platform desktop/web/mobile GUI |
+| Backend  	| FastAPI + Uvicorn    	| REST API server 						|
+| Storage  	| Redis 8.x            	| User data, session state, OAuth state |
+| Auth     	| JWT + OAuth2         	| Email/password, Google, GitHub login 	|
 
 ---
 ## Project Structure
