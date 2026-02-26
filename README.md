@@ -1,4 +1,4 @@
-**Other Us**
+*Other Us*
 
 ***A web app that serves as both a way of connecting	 fellow live expansionists and as a platform for meritocratic development that eventually will incentive opensource  development***
 		
