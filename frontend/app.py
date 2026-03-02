@@ -61,15 +61,33 @@ def main(page: ft.Page):
     # These are attached to the page so LoginScreen can access them via
     # self._page._google_provider and self._page._github_provider.
     # Credentials are read from .env — never hardcoded.
+    # ── OAuth redirect URL ──────────────────────────────────────────────────
+    # IMPORTANT: The redirect URL must point to Flet's own OAuth callback
+    # handler at /oauth_callback on the Flet web server port (8765).
+    # This is NOT the FastAPI backend — it is Flet's internal handler that
+    # closes the popup and fires page.on_login.
+    # The same URL must be registered in the Google and GitHub OAuth app
+    # settings (see README for instructions).
+    flet_oauth_callback = os.getenv(
+        "FLET_OAUTH_REDIRECT_URI", "http://localhost:8765/oauth_callback"
+    )
     page._google_provider = GoogleOAuthProvider(
         client_id=os.getenv("GOOGLE_CLIENT_ID", ""),
         client_secret=os.getenv("GOOGLE_CLIENT_SECRET", ""),
+<<<<<<< HEAD
         redirect_url=os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8086/auth/google/callback"),
+=======
+        redirect_url=flet_oauth_callback,
+>>>>>>> 2c9e207d5d876d99000bd9f889b2a7872aa3e3ce
     )
     page._github_provider = GitHubOAuthProvider(
         client_id=os.getenv("GITHUB_CLIENT_ID", ""),
         client_secret=os.getenv("GITHUB_CLIENT_SECRET", ""),
+<<<<<<< HEAD
         redirect_url=os.getenv("GITHUB_REDIRECT_URI", "http://localhost:8086/auth/github/callback"),
+=======
+        redirect_url=flet_oauth_callback,
+>>>>>>> 2c9e207d5d876d99000bd9f889b2a7872aa3e3ce
     )
 
     page.update()
