@@ -74,20 +74,12 @@ def main(page: ft.Page):
     page._google_provider = GoogleOAuthProvider(
         client_id=os.getenv("GOOGLE_CLIENT_ID", ""),
         client_secret=os.getenv("GOOGLE_CLIENT_SECRET", ""),
-<<<<<<< HEAD
-        redirect_url=os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8086/auth/google/callback"),
-=======
         redirect_url=flet_oauth_callback,
->>>>>>> 2c9e207d5d876d99000bd9f889b2a7872aa3e3ce
     )
     page._github_provider = GitHubOAuthProvider(
         client_id=os.getenv("GITHUB_CLIENT_ID", ""),
         client_secret=os.getenv("GITHUB_CLIENT_SECRET", ""),
-<<<<<<< HEAD
-        redirect_url=os.getenv("GITHUB_REDIRECT_URI", "http://localhost:8086/auth/github/callback"),
-=======
         redirect_url=flet_oauth_callback,
->>>>>>> 2c9e207d5d876d99000bd9f889b2a7872aa3e3ce
     )
 
     page.update()
