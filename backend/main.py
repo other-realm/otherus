@@ -71,10 +71,8 @@ def verify_password(plain: str, hashed: str) -> bool:
     except Exception:
         return False
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="/auth/token")
-
 # ── FastAPI app ───────────────────────────────────────────────────────────────
 app = FastAPI(title="Other Us API", version="1.0.0")
-
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -82,9 +80,7 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 # ── Pydantic models ───────────────────────────────────────────────────────────
-
 class UserCreate(BaseModel):
     email: str
     password: str
@@ -189,7 +185,6 @@ async def get_current_user(
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
     return user
-
 # ── Auth routes ───────────────────────────────────────────────────────────────
 @app.post("/auth/register", response_model=TokenResponse)
 async def register(payload: UserCreate, r: redis.Redis = Depends(get_redis)):
@@ -247,8 +242,6 @@ async def login(
         display_name=user["display_name"],
         email=user["email"],
     )
-
-
 # ── Google OAuth ──────────────────────────────────────────────────────────────
 @app.get("/auth/google/login")
 async def google_login(r: redis.Redis = Depends(get_redis)):
@@ -343,8 +336,6 @@ async def google_callback(
         display_name=user["display_name"],
         email=user["email"],
     )
-
-
 # ── GitHub OAuth ──────────────────────────────────────────────────────────────
 @app.get("/auth/github/login")
 async def github_login(r: redis.Redis = Depends(get_redis)):
@@ -360,7 +351,6 @@ async def github_login(r: redis.Redis = Depends(get_redis)):
     from urllib.parse import urlencode
     url = "https://github.com/login/oauth/authorize?" + urlencode(params)
     return {"auth_url": url, "state": state}
-
 @app.get("/auth/github/callback")
 async def github_callback(
     code: str,
@@ -411,7 +401,6 @@ async def github_callback(
             },
         )
         emails = email_resp.json() if email_resp.status_code == 200 else []
-
     # Find primary verified email
     email = ""
     for e in emails:
@@ -422,14 +411,12 @@ async def github_callback(
         email = gh_user["email"].lower()
     if not email:
         email = f"gh_{gh_user.get('id', uuid.uuid4().hex)}@github.noemail"
-
     oauth_id = str(gh_user.get("id", ""))
     display_name = gh_user.get("name") or gh_user.get("login", email.split("@")[0])
     avatar_url = gh_user.get("avatar_url", "")
     bio = gh_user.get("bio", "") or ""
     location = gh_user.get("location", "") or ""
     website = gh_user.get("blog", "") or ""
-
     user = redis_get_user_by_email(r, email)
     if not user:
         user_id = str(uuid.uuid4())
@@ -455,7 +442,6 @@ async def github_callback(
         user["avatar_url"] = avatar_url
         user["updated_at"] = datetime.now(timezone.utc).isoformat()
         redis_set_user(r, user["user_id"], user)
-
     token = create_access_token({"sub": user["user_id"]})
     return TokenResponse(
         access_token=token,
@@ -464,16 +450,12 @@ async def github_callback(
         display_name=user["display_name"],
         email=user["email"],
     )
-
-
 # ── OAuth token exchange (for Flet's native page.login() flow) ───────────────
 # When Flet's built-in page.login() completes, it gives the frontend the
 # provider's access_token directly. These endpoints accept that token,
 # fetch the user's profile from the provider, and return our own JWT.
-
 class TokenExchangeRequest(BaseModel):
     access_token: str
-
 @app.post("/auth/google/token_exchange")
 async def google_token_exchange(
     payload: TokenExchangeRequest,

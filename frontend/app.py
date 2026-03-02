@@ -64,12 +64,12 @@ def main(page: ft.Page):
     page._google_provider = GoogleOAuthProvider(
         client_id=os.getenv("GOOGLE_CLIENT_ID", ""),
         client_secret=os.getenv("GOOGLE_CLIENT_SECRET", ""),
-        redirect_url=os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8081/auth/google/callback"),
+        redirect_url=os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8086/auth/google/callback"),
     )
     page._github_provider = GitHubOAuthProvider(
         client_id=os.getenv("GITHUB_CLIENT_ID", ""),
         client_secret=os.getenv("GITHUB_CLIENT_SECRET", ""),
-        redirect_url=os.getenv("GITHUB_REDIRECT_URI", "http://localhost:8081/auth/github/callback"),
+        redirect_url=os.getenv("GITHUB_REDIRECT_URI", "http://localhost:8086/auth/github/callback"),
     )
 
     page.update()
@@ -127,7 +127,6 @@ def main(page: ft.Page):
             if isinstance(v, LoginScreen):
                 login_view = v
                 break
-
         if e.error:
             msg = f"Login failed: {e.error_description or e.error}"
             if login_view:
@@ -135,7 +134,6 @@ def main(page: ft.Page):
             else:
                 T.snack(page, msg, error=True)
             return
-
         # Get the provider access token from Flet's auth object
         try:
             provider_token = page.auth.token.access_token
@@ -144,12 +142,10 @@ def main(page: ft.Page):
             if login_view:
                 login_view.show_oauth_error(msg)
             return
-
         # Determine which provider was used
         # GitHubOAuthProvider uses github.com/login/oauth/authorize
         # GoogleOAuthProvider uses accounts.google.com
         provider_name = "github" if "github" in str(type(page.auth.provider)).lower() else "google"
-
         def exchange_token():
             try:
                 # Exchange provider token for our backend JWT
