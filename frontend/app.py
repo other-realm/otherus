@@ -76,9 +76,9 @@ def _start_callback_server():
     """Run the OAuth callback server on port 8550 in a background thread."""
     config = uvicorn.Config(
         _callback_app,
-        host="0.0.0.0",
+        host="localhost",
         port=8550,
-        log_level="error",
+        log_level="debug",
     )
     server = uvicorn.Server(config)
     server.run()
@@ -103,6 +103,7 @@ def main(page: ft.Page):
         """Called from the callback server thread when OAuth completes."""
         def do_set():
             try:
+                print(f"Received OAuth token for provider {provider}: {token[:10]}...")
                 api.set_token(token)
                 # Navigate to home
                 page.views.clear()
@@ -126,7 +127,6 @@ def main(page: ft.Page):
             )
             page.update()
             return
-
         if route == "/home":
             page.views.append(HomeScreen(api=api, on_navigate=_navigate))
         elif route == "/profile":
@@ -148,12 +148,9 @@ def main(page: ft.Page):
             )
         else:
             page.views.append(HomeScreen(api=api, on_navigate=_navigate))
-
         page.update()
-
     def on_route_change(e: ft.RouteChangeEvent):
         _navigate(e.route)
-
     def on_view_pop(e: ft.ViewPopEvent):
         if len(page.views) > 1:
             page.views.pop()
@@ -185,7 +182,7 @@ if __name__ == "__main__":
     cb_thread = threading.Thread(target=_start_callback_server, daemon=True)
     cb_thread.start()
     time.sleep(0.5)
-
+    print("testing")
     # Launch Flet app using ft.run (ft.app is deprecated in 0.80.5)
     ft.run(
         main,

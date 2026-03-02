@@ -7,7 +7,7 @@ python-multipart
 authlib
 python-dotenv
 email-validator
-flet
+flet[all]
 httpx 
 python-dotenv
 email-validator

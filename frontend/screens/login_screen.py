@@ -23,7 +23,6 @@ from frontend import theme as T
 
 class LoginScreen(ft.View):
     """Full-page login/register view. Calls on_login(api) when authenticated."""
-
     def __init__(self, api: OtherUsAPI, on_login: Callable):
         super().__init__(
             route="/login",
@@ -34,9 +33,7 @@ class LoginScreen(ft.View):
         self.on_login = on_login
         self._mode = "login"  # "login" | "register"
         self._build_ui()
-
-    # ── Build ─────────────────────────────────────────────────────────────────
-
+    # ── Login UI ─────────────────────────────────────────────────────────────────
     def _build_ui(self):
         # ── Fields ──
         self.email_field    = T.text_field("Email", hint="you@example.com", width=340)
@@ -120,14 +117,12 @@ class LoginScreen(ft.View):
                 padding=ft.Padding.symmetric(vertical=12, horizontal=20),
             ),
         )
-
         # ── Register-only fields (hidden in login mode) ──
         self.register_extra = ft.Column(
             controls=[self.name_field, self.bio_field, self.interests_field],
             spacing=12,
             visible=False,
         )
-
         form_col = ft.Column(
             controls=[
                 # Branding
@@ -215,9 +210,7 @@ class LoginScreen(ft.View):
                 ),
             )
         ]
-
     # ── Mode toggle ───────────────────────────────────────────────────────────
-
     def _toggle_mode(self, e):
         self._mode = "register" if self._mode == "login" else "login"
         is_reg = self._mode == "register"
@@ -287,10 +280,11 @@ class LoginScreen(ft.View):
         self._set_loading(True)
         self.status_text.value = f"Opening {provider.title()} login in browser…"
         self.update()
-
+        print(f"Initiating {provider} OAuth flow...")
         def do_oauth():
             try:
                 url = self.api.get_oauth_login_url(provider)
+                print(f"Received OAuth URL for {provider}: {url}")
                 webbrowser.open(url)
                 self.status_text.value = (
                     f"Complete the {provider.title()} login in your browser.\n"
@@ -298,6 +292,7 @@ class LoginScreen(ft.View):
                 )
                 self._set_loading(False)
             except APIError as ex:
+                print(f"API error during {provider} OAuth: {ex}")
                 self.status_text.value = str(ex)
                 self._set_loading(False)
             except Exception as ex:

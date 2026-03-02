@@ -115,6 +115,7 @@ def redis_get_user(r: redis.Redis, user_id: str) -> Optional[dict]:
     raw = r.get(f"user:{user_id}")
     return json.loads(raw) if raw else None
 def redis_get_user_by_email(r: redis.Redis, email: str) -> Optional[dict]:
+    print(f"redis_get_user_by_email{r} email={email}")
     uid = r.get(f"email_to_id:{email.lower()}")
     if not uid:
         return None
@@ -162,6 +163,7 @@ def public_user_view(user: dict) -> dict:
 # ── JWT helpers ───────────────────────────────────────────────────────────────
 def create_access_token(data: dict, expires_delta: Optional[timedelta] = None):
     to_encode = data.copy()
+    print(data)
     expire = datetime.now(timezone.utc) + (
         expires_delta or timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
@@ -229,6 +231,7 @@ async def login(
     form_data: OAuth2PasswordRequestForm = Depends(),
     r: redis.Redis = Depends(get_redis),
 ):
+    print(f"redis login{r} form_data={form_data}")
     """Login with email/password."""
     user = redis_get_user_by_email(r, form_data.username)
     if not user or not verify_password(form_data.password, user.get("password_hash", "")):
@@ -250,6 +253,7 @@ async def login(
 # ── Google OAuth ──────────────────────────────────────────────────────────────
 @app.get("/auth/google/login")
 async def google_login(r: redis.Redis = Depends(get_redis)):
+    print(f"google_login{r}")
     """Return the Google OAuth authorization URL."""
     state = secrets.token_urlsafe(32)
     r.setex(f"oauth_state:{state}", 600, "google")  # 10 min TTL
@@ -271,6 +275,7 @@ async def google_callback(
     r: redis.Redis = Depends(get_redis),
 ):
     """Handle Google OAuth callback, exchange code for token."""
+    print(f"Google callback received: code={code}, state={state}")
     stored = r.get(f"oauth_state:{state}")
     if not stored:
         raise HTTPException(status_code=400, detail="Invalid OAuth state")
