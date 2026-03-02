@@ -76,6 +76,27 @@ class OtherUsAPI:
             resp = client.get(f"{BASE_URL}/auth/{provider}/login")
         data = self._handle_response(resp)
         return data["auth_url"]
+
+    def exchange_oauth_token(self, provider: str, provider_access_token: str) -> Optional[str]:
+        """
+        Exchange a provider access token (from Flet's page.login OAuth flow)
+        for our own backend JWT. Calls the backend's token-exchange endpoint.
+        Returns the JWT string on success, or raises APIError on failure.
+        """
+        with httpx.Client(timeout=15) as client:
+            resp = client.post(
+                f"{BASE_URL}/auth/{provider}/token_exchange",
+                json={"access_token": provider_access_token},
+            )
+        data = self._handle_response(resp)
+        self.token = data["access_token"]
+        self.current_user = {
+            "user_id": data["user_id"],
+            "display_name": data["display_name"],
+            "email": data["email"],
+        }
+        return self.token
+
     def logout(self):
         self.token = None
         self.current_user = None

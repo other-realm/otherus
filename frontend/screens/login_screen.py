@@ -4,7 +4,11 @@ Other Us – Login / Register Screen
 Supports: email/password login, registration, Google OAuth, GitHub OAuth.
 Nothing else is accessible until the user is fully authenticated.
 
-All Flet 0.80.5 API calls verified by live introspection:
+OAuth is handled entirely within the app using Flet's native page.login()
+which opens the provider's auth page as a browser popup (not a new OS window).
+The popup closes automatically when auth completes and page.on_login fires.
+
+All Flet 0.80.5+ API calls verified by live introspection:
   - ft.Button (not ft.ElevatedButton) for primary actions
   - ft.Padding.*, ft.Margin.*, ft.Border.*, ft.BorderRadius.* class methods
   - ft.Alignment(x, y) instead of ft.alignment.center etc.
@@ -13,9 +17,8 @@ All Flet 0.80.5 API calls verified by live introspection:
 """
 
 import threading
-import webbrowser
 import flet as ft
-from typing import Callable
+from typing import Callable, Optional
 
 from frontend.api_client import OtherUsAPI, APIError
 from frontend import theme as T
@@ -23,6 +26,7 @@ from frontend import theme as T
 
 class LoginScreen(ft.View):
     """Full-page login/register view. Calls on_login(api) when authenticated."""
+
     def __init__(self, api: OtherUsAPI, on_login: Callable):
         super().__init__(
             route="/login",
@@ -31,8 +35,14 @@ class LoginScreen(ft.View):
         )
         self.api = api
         self.on_login = on_login
+        self._page: Optional[ft.Page] = None
         self._mode = "login"  # "login" | "register"
         self._build_ui()
+
+    def set_page(self, page: ft.Page):
+        """Must be called after the view is added to the page."""
+        self._page = page
+
     # ── Login UI ─────────────────────────────────────────────────────────────────
     def _build_ui(self):
         # ── Fields ──
@@ -56,7 +66,7 @@ class LoginScreen(ft.View):
             color=T.COSMIC_PURPLE_GLOW, width=24, height=24, visible=False
         )
 
-        # ── Submit button — label updated via .content, not .text ──
+        # ── Submit button ──
         self._submit_label = ft.Text(
             "Sign In", color=T.STAR_WHITE, size=14, weight=ft.FontWeight.W_600
         )
@@ -74,7 +84,7 @@ class LoginScreen(ft.View):
             ),
         )
 
-        # ── Toggle button — label updated via .content ──
+        # ── Toggle button ──
         self._toggle_label = ft.Text(
             "Don't have an account? Register",
             color=T.AURORA_TEAL_LIGHT, size=13,
@@ -84,7 +94,7 @@ class LoginScreen(ft.View):
             on_click=self._toggle_mode,
         )
 
-        # ── Google / GitHub buttons ──
+        # ── Google button ──
         self.google_btn = ft.Button(
             content=ft.Row(
                 [
@@ -101,6 +111,8 @@ class LoginScreen(ft.View):
                 padding=ft.Padding.symmetric(vertical=12, horizontal=20),
             ),
         )
+
+        # ── GitHub button ──
         self.github_btn = ft.Button(
             content=ft.Row(
                 [
@@ -117,12 +129,14 @@ class LoginScreen(ft.View):
                 padding=ft.Padding.symmetric(vertical=12, horizontal=20),
             ),
         )
+
         # ── Register-only fields (hidden in login mode) ──
         self.register_extra = ft.Column(
             controls=[self.name_field, self.bio_field, self.interests_field],
             spacing=12,
             visible=False,
         )
+
         form_col = ft.Column(
             controls=[
                 # Branding
@@ -199,7 +213,6 @@ class LoginScreen(ft.View):
         self.controls = [
             ft.Container(
                 content=T.card(form_col, padding=32),
-                # ft.Alignment(x, y): (0,0)=center, (0,-1)=top, (0,1)=bottom
                 alignment=ft.Alignment(0, 0),
                 expand=True,
                 bgcolor=T.DEEP_SPACE,
@@ -210,12 +223,12 @@ class LoginScreen(ft.View):
                 ),
             )
         ]
+
     # ── Mode toggle ───────────────────────────────────────────────────────────
     def _toggle_mode(self, e):
         self._mode = "register" if self._mode == "login" else "login"
         is_reg = self._mode == "register"
         self.register_extra.visible = is_reg
-        # Update button labels via .content (no .text setter in Flet 0.80.5)
         self._submit_label.value = "Create Account" if is_reg else "Sign In"
         self._toggle_label.value = (
             "Already have an account? Sign In"
@@ -225,8 +238,7 @@ class LoginScreen(ft.View):
         self.status_text.value = ""
         self.update()
 
-    # ── Submit ────────────────────────────────────────────────────────────────
-
+    # ── Loading state ─────────────────────────────────────────────────────────
     def _set_loading(self, state: bool):
         self.loading.visible = state
         self.submit_btn.disabled = state
@@ -234,6 +246,7 @@ class LoginScreen(ft.View):
         self.github_btn.disabled = state
         self.update()
 
+    # ── Email / password submit ───────────────────────────────────────────────
     def _on_submit(self, e):
         self.status_text.value = ""
         email    = (self.email_field.value or "").strip()
@@ -274,35 +287,36 @@ class LoginScreen(ft.View):
 
         threading.Thread(target=do_auth, daemon=True).start()
 
-    # ── OAuth ─────────────────────────────────────────────────────────────────
-
-    def _open_oauth(self, provider: str):
-        self._set_loading(True)
-        self.status_text.value = f"Opening {provider.title()} login in browser…"
-        self.update()
-        print(f"Initiating {provider} OAuth flow...")
-        def do_oauth():
-            try:
-                url = self.api.get_oauth_login_url(provider)
-                print(f"Received OAuth URL for {provider}: {url}")
-                webbrowser.open(url)
-                self.status_text.value = (
-                    f"Complete the {provider.title()} login in your browser.\n"
-                    "The app will update automatically."
-                )
-                self._set_loading(False)
-            except APIError as ex:
-                print(f"API error during {provider} OAuth: {ex}")
-                self.status_text.value = str(ex)
-                self._set_loading(False)
-            except Exception as ex:
-                self.status_text.value = f"Error: {ex}"
-                self._set_loading(False)
-
-        threading.Thread(target=do_oauth, daemon=True).start()
+    # ── OAuth via Flet's native page.login() ──────────────────────────────────
+    # page.login() opens the provider's auth page as a browser popup window
+    # (NOT a new OS application window). The popup closes automatically when
+    # the user completes login, and page.on_login fires with the result.
+    # The on_login handler in app.py then exchanges the provider token for
+    # our own backend JWT and navigates to the home screen.
 
     def _on_google(self, e):
-        self._open_oauth("google")
+        if not self._page:
+            self.status_text.value = "Page not ready. Please try again."
+            self.update()
+            return
+        self._set_loading(True)
+        self.status_text.value = "Opening Google login popup…"
+        self.update()
+        # Trigger Flet's built-in OAuth flow — fires page.on_login when done
+        self._page.run_task(self._page.login, self._page._google_provider)
 
     def _on_github(self, e):
-        self._open_oauth("github")
+        if not self._page:
+            self.status_text.value = "Page not ready. Please try again."
+            self.update()
+            return
+        self._set_loading(True)
+        self.status_text.value = "Opening GitHub login popup…"
+        self.update()
+        # Trigger Flet's built-in OAuth flow — fires page.on_login when done
+        self._page.run_task(self._page.login, self._page._github_provider)
+
+    def show_oauth_error(self, message: str):
+        """Called from app.py if OAuth login fails."""
+        self.status_text.value = message
+        self._set_loading(False)

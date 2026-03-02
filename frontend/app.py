@@ -1,30 +1,39 @@
 """
 Other Us – Main Flet Application Entry Point
-Handles routing, authentication state, and OAuth callback server.
-Compatible with Flet 0.80.5+
+
+Handles routing, authentication state, and OAuth via Flet's native login system.
+
+OAuth flow (Google / GitHub):
+  1. User clicks the provider button in LoginScreen.
+  2. LoginScreen calls page.login(provider) which opens a browser popup.
+  3. The popup handles the provider's auth page entirely within the browser.
+  4. When complete, the popup closes and page.on_login fires.
+  5. on_login exchanges the provider access_token for our backend JWT,
+     stores it in the API client, and navigates to the home screen.
+
+No external browser window is opened. No custom callback server is needed.
+
+Compatible with Flet 0.81+
 """
 
 import sys
 import os
-import asyncio
 import threading
-import time
 
 # ── Silence Electron's NODE_OPTIONS warning ───────────────────────────────────
-# Electron (used by flet-desktop) inherits the parent process environment.
-# If NODE_OPTIONS is set (e.g. by nvm, npm, or CI tools), Electron logs:
-#   "Most NODE_OPTIONs are not supported in packaged apps."
-# Removing it here ensures a clean launch regardless of the calling shell.
-# os.environ.pop("NODE_OPTIONS", None)
-# os.environ.pop("NODE_PATH", None)
+os.environ.pop("NODE_OPTIONS", None)
+os.environ.pop("NODE_PATH", None)
 
 import flet as ft
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
-import uvicorn
+from flet.auth.providers.github_oauth_provider import GitHubOAuthProvider
+from flet.auth.providers.google_oauth_provider import GoogleOAuthProvider
+from dotenv import load_dotenv
 
-# Add parent to path so imports work
+# Add parent to path so imports work when running as `python app.py`
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
+
+# Load .env from project root
+load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
 
 from frontend.api_client import OtherUsAPI
 from frontend import theme as T
@@ -35,53 +44,6 @@ from frontend.screens.search_screen import SearchScreen
 from frontend.screens.user_detail_screen import UserDetailScreen
 from frontend.screens.settings_screen import SettingsScreen
 
-# ── OAuth callback mini-server ────────────────────────────────────────────────
-# When Google/GitHub redirect back after login, they hit this tiny HTTP server
-# which passes the JWT token to the Flet app via a shared callback registry.
-_oauth_callbacks: dict = {}  # session_id -> callback function
-_callback_app = FastAPI()
-@_callback_app.get("/oauth_callback")
-async def oauth_callback(request: Request):
-    token = request.query_params.get("token", "")
-    provider = request.query_params.get("provider", "")
-    if token:
-        for cb in list(_oauth_callbacks.values()):
-            try:
-                cb(token, provider)
-            except Exception:
-                pass
-    html = """
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Other Us – Login Complete</title>
-      <style>
-        body { background: #0A0E1A; color: #A78BFA; font-family: 'Segoe UI', sans-serif;
-               display: flex; align-items: center; justify-content: center;
-               height: 100vh; margin: 0; flex-direction: column; }
-        h1 { font-size: 2rem; margin-bottom: 0.5rem; }
-        p  { color: #9CA3AF; font-size: 1rem; }
-        .logo { font-size: 2.5rem; margin-bottom: 1rem; }
-      </style>
-    </head>
-    <body>
-      <div class="logo">✦</div>
-      <h1>Login Successful!</h1>
-      <p>You can close this tab and return to the Other Us app.</p>
-    </body>
-    </html>
-    """
-    return HTMLResponse(html)
-def _start_callback_server():
-    """Run the OAuth callback server on port 8550 in a background thread."""
-    config = uvicorn.Config(
-        _callback_app,
-        host="localhost",
-        port=8550,
-        log_level="debug",
-    )
-    server = uvicorn.Server(config)
-    server.run()
 # ── Flet App ──────────────────────────────────────────────────────────────────
 def main(page: ft.Page):
     # ── Page setup ──
@@ -94,39 +56,39 @@ def main(page: ft.Page):
     page.window.min_width = 480
     page.window.min_height = 600
     page.padding = 0
+
+    # ── OAuth providers (Flet built-in) ──────────────────────────────────────
+    # These are attached to the page so LoginScreen can access them via
+    # self._page._google_provider and self._page._github_provider.
+    # Credentials are read from .env — never hardcoded.
+    page._google_provider = GoogleOAuthProvider(
+        client_id=os.getenv("GOOGLE_CLIENT_ID", ""),
+        client_secret=os.getenv("GOOGLE_CLIENT_SECRET", ""),
+        redirect_url=os.getenv("GOOGLE_REDIRECT_URI", "http://localhost:8081/auth/google/callback"),
+    )
+    page._github_provider = GitHubOAuthProvider(
+        client_id=os.getenv("GITHUB_CLIENT_ID", ""),
+        client_secret=os.getenv("GITHUB_CLIENT_SECRET", ""),
+        redirect_url=os.getenv("GITHUB_REDIRECT_URI", "http://localhost:8081/auth/github/callback"),
+    )
+
     page.update()
+
     # ── Shared API client ──
     api = OtherUsAPI()
-    # ── Register OAuth callback ──
-    session_id = id(page)
-    def handle_oauth_token(token: str, provider: str):
-        """Called from the callback server thread when OAuth completes."""
-        def do_set():
-            try:
-                print(f"Received OAuth token for provider {provider}: {token[:10]}...")
-                api.set_token(token)
-                # Navigate to home
-                page.views.clear()
-                page.views.append(HomeScreen(api=api, on_navigate=_navigate))
-                page.update()
-            except Exception as ex:
-                T.snack(page, f"OAuth error: {ex}", error=True)
-        page.run_thread(do_set)
-
-    _oauth_callbacks[session_id] = handle_oauth_token
 
     # ── Navigation ────────────────────────────────────────────────────────────
-
     def _navigate(route: str):
-        """Push a new view onto the page's view stack."""
+        """Replace the current view with the target route's view."""
         page.views.clear()
 
         if not api.token:
-            page.views.append(
-                LoginScreen(api=api, on_login=lambda _api: _navigate("/home"))
-            )
+            login_view = LoginScreen(api=api, on_login=lambda _api: _navigate("/home"))
+            login_view.set_page(page)
+            page.views.append(login_view)
             page.update()
             return
+
         if route == "/home":
             page.views.append(HomeScreen(api=api, on_navigate=_navigate))
         elif route == "/profile":
@@ -149,13 +111,70 @@ def main(page: ft.Page):
         else:
             page.views.append(HomeScreen(api=api, on_navigate=_navigate))
         page.update()
+
+    # ── OAuth login handler ───────────────────────────────────────────────────
+    def on_login(e: ft.LoginEvent):
+        """
+        Fired by Flet when page.login() completes (Google or GitHub).
+        e.error is non-empty if the user cancelled or auth failed.
+        On success, page.auth.token.access_token holds the provider token.
+        We exchange it for our backend JWT via the existing OAuth callback
+        endpoints, then navigate to the home screen.
+        """
+        # Find the current login screen to show errors if needed
+        login_view = None
+        for v in page.views:
+            if isinstance(v, LoginScreen):
+                login_view = v
+                break
+
+        if e.error:
+            msg = f"Login failed: {e.error_description or e.error}"
+            if login_view:
+                login_view.show_oauth_error(msg)
+            else:
+                T.snack(page, msg, error=True)
+            return
+
+        # Get the provider access token from Flet's auth object
+        try:
+            provider_token = page.auth.token.access_token
+        except Exception:
+            msg = "Could not retrieve provider token."
+            if login_view:
+                login_view.show_oauth_error(msg)
+            return
+
+        # Determine which provider was used
+        # GitHubOAuthProvider uses github.com/login/oauth/authorize
+        # GoogleOAuthProvider uses accounts.google.com
+        provider_name = "github" if "github" in str(type(page.auth.provider)).lower() else "google"
+
+        def exchange_token():
+            try:
+                # Exchange provider token for our backend JWT
+                our_jwt = api.exchange_oauth_token(provider_name, provider_token)
+                if our_jwt:
+                    _navigate("/home")
+                else:
+                    if login_view:
+                        login_view.show_oauth_error("Authentication failed. Please try again.")
+            except Exception as ex:
+                if login_view:
+                    login_view.show_oauth_error(f"Backend error: {ex}")
+
+        threading.Thread(target=exchange_token, daemon=True).start()
+
+    page.on_login = on_login
+
+    # ── Route change / view pop ───────────────────────────────────────────────
     def on_route_change(e: ft.RouteChangeEvent):
         _navigate(e.route)
+
     def on_view_pop(e: ft.ViewPopEvent):
         if len(page.views) > 1:
             page.views.pop()
-        top = page.views[-1] if page.views else None
-        if top:
+        if page.views:
             page.update()
 
     page.on_route_change = on_route_change
@@ -163,27 +182,14 @@ def main(page: ft.Page):
 
     # ── Initial route ──
     page.views.clear()
-    page.views.append(
-        LoginScreen(api=api, on_login=lambda _api: _navigate("/home"))
-    )
+    login_view = LoginScreen(api=api, on_login=lambda _api: _navigate("/home"))
+    login_view.set_page(page)
+    page.views.append(login_view)
     page.update()
-
-    # ── Cleanup on close ──
-    def on_disconnect(e):
-        _oauth_callbacks.pop(session_id, None)
-
-    page.on_disconnect = on_disconnect
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────
-
 if __name__ == "__main__":
-    # Start OAuth callback server in background
-    cb_thread = threading.Thread(target=_start_callback_server, daemon=True)
-    cb_thread.start()
-    time.sleep(0.5)
-    print("testing")
-    # Launch Flet app using ft.run (ft.app is deprecated in 0.80.5)
     ft.run(
         main,
         view=ft.AppView.FLET_APP,

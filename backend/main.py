@@ -25,7 +25,6 @@ from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 import bcrypt as _bcrypt
 from pydantic import BaseModel, EmailStr, field_validator
-from sympy.abc import B
 
 # ── Load env ──────────────────────────────────────────────────────────────────
 load_dotenv(os.path.join(os.path.dirname(__file__), "..", ".env"))
@@ -337,9 +336,13 @@ async def google_callback(
             redis_set_user(r, user["user_id"], user)
 
     token = create_access_token({"sub": user["user_id"]})
-    # Redirect to frontend with token
-    redirect_url = f"{BASE_URL}:8550/oauth_callback?token={token}&provider=google"
-    return RedirectResponse(url=redirect_url)
+    return TokenResponse(
+        access_token=token,
+        token_type="bearer",
+        user_id=user["user_id"],
+        display_name=user["display_name"],
+        email=user["email"],
+    )
 
 
 # ── GitHub OAuth ──────────────────────────────────────────────────────────────
@@ -454,8 +457,158 @@ async def github_callback(
         redis_set_user(r, user["user_id"], user)
 
     token = create_access_token({"sub": user["user_id"]})
-    redirect_url = f"{BASE_URL}:8550/oauth_callback?token={token}&provider=github"
-    return RedirectResponse(url=redirect_url)
+    return TokenResponse(
+        access_token=token,
+        token_type="bearer",
+        user_id=user["user_id"],
+        display_name=user["display_name"],
+        email=user["email"],
+    )
+
+
+# ── OAuth token exchange (for Flet's native page.login() flow) ───────────────
+# When Flet's built-in page.login() completes, it gives the frontend the
+# provider's access_token directly. These endpoints accept that token,
+# fetch the user's profile from the provider, and return our own JWT.
+
+class TokenExchangeRequest(BaseModel):
+    access_token: str
+
+@app.post("/auth/google/token_exchange")
+async def google_token_exchange(
+    payload: TokenExchangeRequest,
+    r: redis.Redis = Depends(get_redis),
+):
+    """Exchange a Google access token for our backend JWT."""
+    async with httpx.AsyncClient() as client:
+        userinfo_resp = await client.get(
+            "https://www.googleapis.com/oauth2/v3/userinfo",
+            headers={"Authorization": f"Bearer {payload.access_token}"},
+        )
+        if userinfo_resp.status_code != 200:
+            raise HTTPException(status_code=400, detail="Invalid Google access token")
+        guser = userinfo_resp.json()
+
+    email = guser.get("email", "").lower()
+    oauth_id = guser.get("sub", "")
+    display_name = guser.get("name", email.split("@")[0])
+    avatar_url = guser.get("picture", "")
+
+    user = redis_get_user_by_email(r, email)
+    if not user:
+        user_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc).isoformat()
+        user = {
+            "user_id": user_id,
+            "email": email,
+            "password_hash": "",
+            "display_name": display_name,
+            "bio": "",
+            "interests": "",
+            "avatar_url": avatar_url,
+            "location": "",
+            "website": "",
+            "provider": "google",
+            "oauth_id": oauth_id,
+            "created_at": now,
+            "updated_at": now,
+        }
+        redis_set_user(r, user_id, user)
+        redis_add_to_index(r, user_id)
+    else:
+        if avatar_url and user.get("avatar_url") != avatar_url:
+            user["avatar_url"] = avatar_url
+            user["updated_at"] = datetime.now(timezone.utc).isoformat()
+            redis_set_user(r, user["user_id"], user)
+
+    token = create_access_token({"sub": user["user_id"]})
+    return TokenResponse(
+        access_token=token,
+        token_type="bearer",
+        user_id=user["user_id"],
+        display_name=user["display_name"],
+        email=user["email"],
+    )
+
+
+@app.post("/auth/github/token_exchange")
+async def github_token_exchange(
+    payload: TokenExchangeRequest,
+    r: redis.Redis = Depends(get_redis),
+):
+    """Exchange a GitHub access token for our backend JWT."""
+    async with httpx.AsyncClient() as client:
+        user_resp = await client.get(
+            "https://api.github.com/user",
+            headers={
+                "Authorization": f"Bearer {payload.access_token}",
+                "Accept": "application/vnd.github.v3+json",
+            },
+        )
+        if user_resp.status_code != 200:
+            raise HTTPException(status_code=400, detail="Invalid GitHub access token")
+        gh_user = user_resp.json()
+
+        email_resp = await client.get(
+            "https://api.github.com/user/emails",
+            headers={
+                "Authorization": f"Bearer {payload.access_token}",
+                "Accept": "application/vnd.github.v3+json",
+            },
+        )
+        emails = email_resp.json() if email_resp.status_code == 200 else []
+
+    email = ""
+    for em in emails:
+        if isinstance(em, dict) and em.get("primary") and em.get("verified"):
+            email = em["email"].lower()
+            break
+    if not email and gh_user.get("email"):
+        email = gh_user["email"].lower()
+    if not email:
+        email = f"gh_{gh_user.get('id', uuid.uuid4().hex)}@github.noemail"
+
+    oauth_id = str(gh_user.get("id", ""))
+    display_name = gh_user.get("name") or gh_user.get("login", email.split("@")[0])
+    avatar_url = gh_user.get("avatar_url", "")
+    bio = gh_user.get("bio", "") or ""
+    location = gh_user.get("location", "") or ""
+    website = gh_user.get("blog", "") or ""
+
+    user = redis_get_user_by_email(r, email)
+    if not user:
+        user_id = str(uuid.uuid4())
+        now = datetime.now(timezone.utc).isoformat()
+        user = {
+            "user_id": user_id,
+            "email": email,
+            "password_hash": "",
+            "display_name": display_name,
+            "bio": bio,
+            "interests": "",
+            "avatar_url": avatar_url,
+            "location": location,
+            "website": website,
+            "provider": "github",
+            "oauth_id": oauth_id,
+            "created_at": now,
+            "updated_at": now,
+        }
+        redis_set_user(r, user_id, user)
+        redis_add_to_index(r, user_id)
+    else:
+        user["avatar_url"] = avatar_url
+        user["updated_at"] = datetime.now(timezone.utc).isoformat()
+        redis_set_user(r, user["user_id"], user)
+
+    token = create_access_token({"sub": user["user_id"]})
+    return TokenResponse(
+        access_token=token,
+        token_type="bearer",
+        user_id=user["user_id"],
+        display_name=user["display_name"],
+        email=user["email"],
+    )
 
 
 # ── User profile routes ───────────────────────────────────────────────────────
