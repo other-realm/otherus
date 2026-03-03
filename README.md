@@ -1,223 +1,180 @@
 # Other Us
 
-***A web app that serves as both a way of connecting	 fellow live expansionists and as a platform for meritocratic development that eventually will incentive opensource  development***
-		
-o	Social networking function
-  
--	A sort of ok cupid/tinder/bumble for transhumanists
+**Other Us** is a full-stack, cross-platform social networking application designed for communities interested in consciousness research, transhumanism, and intentional living. This document provides a complete guide to the project architecture, setup, and operation.
 
--	A better user interface than 
+This project was built by **Manus AI** based on the detailed specifications provided.
 
--	For connecting people to work on projects and discus new ideas
+## Project Overview
 
--	A coordinating place for physical events 
+The application consists of two main parts:
 
-o	Physical testing of various unique or undertested scientific and/or social ideas related to shared consciousness.
-  
--	A guess the number app
+1.  A **Python backend** built with the **FastAPI** framework.
+2.  A **cross-platform frontend** built with **Expo (React Native)**, targeting iOS, Android, and Web from a single codebase.
 
-    -	A random number is given to 40% of participants and a blank input box is given to the rest of the participants.  It is the goal to have the participants who were not given a number try and beat random chance that they get it right.
+### Core Features
 
-    -	Multiple versions: guess a number out of a thousand, guess a binary choice, guess a trinary choice, or have the number of options be user selectable and have groups for each number.
+- **OAuth Authentication**: Secure sign-in using Google and GitHub.
+- **Dynamic Profile System**: User profiles are generated from a flexible JSON schema, allowing for complex and evolving data structures. This includes inputs, rich text editors, image uploads, sliders, and interactive maps.
+- **Community Aggregation**: A central page to view all community members. On the web, this page displays aggregated data from user profiles as interactive radar charts to visualize community-wide skills, interests, and values.
+- **Experiment Tracking**: Admins can create, edit, and manage pages for collaborative experiments using a WYSIWYG editor.
+- **Real-Time Chat**: Users can engage in one-on-one or group chats, with real-time messaging orchestrated by RabbitMQ and delivered via WebSockets.
+- **Push Notifications**: Offline users receive chat notifications via a self-hostable `ntfy.sh` service.
+- **Account Management**: Users can manage their notification settings, log out, and permanently delete their accounts and all associated data.
 
--	A collaborative graphics creation app
+## Architecture
 
-    -	Basically, a graphic diffusion model, where the "noise" comes from many humans trying to arrive at a single image, with the only method of collaborating being through collective thought
+| Component             | Technology                                      | Description                                                                                             |
+| --------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------- |
+| **Backend Framework** | FastAPI (Python)                                | A modern, high-performance web framework for building APIs.                                             |
+| **Database**          | Redis (with RedisJSON)                          | An in-memory data store used as the primary database for users, profiles, and chat messages.            |
+| **Messaging Queue**   | RabbitMQ                                        | A message broker used to decouple chat message processing and distribution.                             |
+| **Frontend Framework**| Expo (React Native + TypeScript)                | A single codebase for building native iOS, Android, and web applications.                               |
+| **Authentication**    | OAuth 2.0 (Google & GitHub)                     | Handled by the backend using the `Authlib` library.                                                     |
+| **Real-Time Comms**   | WebSockets                                      | Provides real-time, bidirectional communication for the chat feature.                                   |
+| **Push Notifications**| ntfy.sh                                         | A simple, open-source push notification service.                                                        |
+| **Mapping**           | Leaflet.js                                      | Used via `react-leaflet` on the web and a `WebView` wrapper on native for the profile location picker.  |
+| **Styling**           | (No specific library)                           | A custom theme is implemented in `frontend/src/utils/theme.ts`.                                         |
+| **Testing (Backend)** | Pytest                                          | A framework for writing simple, scalable tests for the FastAPI application.                             |
+| **Testing (Frontend)**| Jest & React Testing Library                    | Used for unit and component testing of the Expo application.                                            |
 
--	Various memory tests, only the "memory" being tested is distributed to multiple people
-
-    -	An "N-Back" score test, where words flash on the screen and you need to remember whether the that was word flashed two iterations in the past is now showing again.  This will be expanded so that you could be getting a word that was flashed on someone else's screen	
-
--	A system of incentivizing people to contribute to open source code – basically a structured version of GitHub Sponsors that gives monetary values to tasks outstanding, probably integrate with GitHub/GitLab.
-
-    -	A more direct and accountable way of donating/subscribing to things than just giving subscriptions and a good means of direct meritocracy.  
-
-    -	A subscription/donation model where subscribers get to chose tasks they want completed each month and people who complete the tasks get the money that it was allocated towards, with some of the money going to a general pool to fund ongoing upkeep needs, possibly funding operative members. 
-
-    -	This can be the primary marketing channel of the media.
-
-
-# Other Us
-## Architecture Overview
-| Layer 	| Technology 			| Purpose 								|
-|-----------|-----------------------|---------------------------------------|
-| Frontend 	| Flet 0.80.5 (Python) 	| Cross-platform desktop/web/mobile GUI |
-| Backend  	| FastAPI + Uvicorn    	| REST API server 						|
-| Storage  	| Redis 8.x            	| User data, session state, OAuth state |
-| Auth     	| JWT + OAuth2         	| Email/password, Google, GitHub login 	|
-
----
-## Project Structure
-```
-
-other_us/
-├── .env                          # Environment variables (credentials)
-├── README.md                     # This file
-├── backend/
-│   ├── __init__.py
-│   ├── main.py                   # FastAPI app, all routes
-│   └── requirements.txt          # Backend dependencies
-│
-└── frontend/
-    ├── __init__.py               # Marks frontend as a package
-    ├── app.py                    # Flet entry point, routing, OAuth callback server
-    ├── api_client.py             # HTTP client wrapping all backend calls
-    ├── theme.py                  # Colors, typography, reusable UI components
-    └── screens/
-        ├── __init__.py
-        ├── login_screen.py       # Login/Register screen (email, Google, GitHub)
-        ├── home_screen.py        # Dashboard / welcome screen
-        ├── profile_screen.py     # My Profile view + edit
-        ├── search_screen.py      # Search for other members
-        ├── user_detail_screen.py # View another member's public profile
-        └── settings_screen.py   # Account settings + deletion
-```
----
-
-### Authentication
-- **Email/Password**: Register and sign in with email and password (bcrypt hashed)
-- **Google OAuth**: Sign in with Google account (OpenID Connect)
-- **GitHub OAuth**: Sign in with GitHub account
-- **JWT Tokens**: Stateless authentication with configurable expiry (default 60 min)
-- **Protected Routes**: Nothing except the login screen is accessible without authentication
-
-### User Profiles
-- Display name, bio, interests, location, website, avatar URL
-- View and edit your own profile
-- View other members' public profiles
-
-### Search
-- Full-text search across display name, bio, interests, and location
-- Results show avatar, bio snippet, interests, and location
-- Click any result to view the full public profile
-
-### Account Management
-- Sign out (ends session, preserves data)
-- Delete account (permanent, with confirmation dialog)
-
-### Selectable Text & Images
-- All text throughout the app is wrapped in `ft.SelectionArea`, enabling users to highlight and copy any text
-- Images are also wrapped in `SelectionArea` for right-click/copy support
-- This overrides Flet's default non-selectable behavior
-
----
-
-## Setup & Running
+## Getting Started
 
 ### Prerequisites
 
-```bash
-# Python 3.11+
+- **Docker & Docker Compose**: For running Redis and RabbitMQ.
+- **Python 3.11+** & `pip`
+- **Node.js 18+** & `npm`
+- **Expo CLI**: `npm install -g expo-cli`
 
-pip install -Ur requirements.txt
+### Deployment with `deploy.sh`
 
-# Redis server (Ubuntu) [or use Docker: `docker run -p 6379:6379 redis`]
-sudo apt-get install redis-server
+For a streamlined setup, use the provided `deploy.sh` script. This script will:
+
+1.  Verify Docker and Docker Compose installations.
+2.  Check for required environment variables (OAuth credentials, etc.).
+3.  Build and start the backend services (FastAPI, Redis, RabbitMQ) using Docker Compose.
+4.  Install frontend dependencies and provide instructions to start the Expo frontend.
+
+**Usage:**
+
+1.  **Navigate to the project root directory**:
+    ```bash
+    cd other-us
+    ```
+
+2.  **Set Environment Variables**: Before running the script, ensure you have set the necessary environment variables for your OAuth credentials. These should be exported in your shell session or managed via a `.env` file that the script can source (though the script currently expects them to be exported).
+    ```bash
+    export GOOGLE_CLIENT_ID="your_google_client_id"
+    export GOOGLE_CLIENT_SECRET="your_google_client_secret"
+    export GITHUB_CLIENT_ID="your_github_client_id"
+    export GITHUB_CLIENT_SECRET="your_github_client_secret"
+    export COOKIE_SECRET="a_long_random_string_for_cookie_encryption"
+    export SERVER_METADATA_URL="https://accounts.google.com/.well-known/openid-configuration"
+    export REDIRECT_URI="http://localhost:8080/auth"
+    export SCOPES="openid email profile"
+    ```
+
+3.  **Make the script executable**:
+    ```bash
+    chmod +x deploy.sh
+    ```
+
+4.  **Run the deployment script**:
+    ```bash
+    ./deploy.sh
+    ```
+
+    The script will output instructions on how to start the frontend application after the backend services are up and running.
+
+### Manual Backend Setup (Alternative to `deploy.sh`)
+
+If you prefer to set up the backend manually without the `deploy.sh` script, follow these steps:
+
+1.  **Navigate to the backend directory**:
+    ```bash
+    cd backend
+    ```
+
+2.  **Start Dependencies (Redis & RabbitMQ)**:
+    Ensure you have a `docker-compose.yml` file in the project root (provided in the zip). Then, from the project root (`other-us/`):
+    ```bash
+    docker-compose up -d redis rabbitmq
+    ```
+
+3.  **Install Python packages**:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+4.  **Configure Environment**: Copy the `.env.example` to `.env` and fill in your credentials. The provided Google credentials are included, but you must add your **GitHub Client Secret**.
+    ```bash
+    cp .env.example .env
+    # Edit .env and add your GITHUB_CLIENT_SECRET
+    ```
+
+5.  **Run the server**:
+    ```bash
+    uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
+    ```
+    The API will be available at `http://localhost:8080`.
+
+### Manual Frontend Setup (Alternative to `deploy.sh`)
+
+If you prefer to set up the frontend manually without the `deploy.sh` script, follow these steps:
+
+1.  **Navigate to the frontend directory**:
+    ```bash
+    cd frontend
+    ```
+
+2.  **Install Node.js packages**:
+    ```bash
+    npm install
+    ```
+
+3.  **Run the application**:
+    - **For Web**:
+      ```bash
+      npm run web
+      ```
+    - **For iOS** (requires macOS and Xcode or the Expo Go app):
+      ```bash
+      npm run ios
+      ```
+    - **For Android** (requires Android Studio or the Expo Go app):
+      ```bash
+      npm run android
+      ```
+
+The Expo development server will start, and you can access the application in your browser, simulator, or on a physical device via the Expo Go app.
+
+## Project Structure
+
 ```
-
-###  Start 
-
-**Terminal 1 – Backend:**
-```bash
-cd other_us
-uvicorn backend.main:app --host 0.0.0.0 --port 8081 --reload
+other-us/
+├── backend/
+│   ├── app/                # Main application source code
+│   │   ├── routers/        # API endpoint definitions (auth, profiles, etc.)
+│   │   ├── services/       # Business logic (Redis, RabbitMQ, etc.)
+│   │   ├── models/         # Pydantic data schemas
+│   │   ├── middleware/     # Authentication dependencies
+│   │   ├── utils/          # Helper functions (JWT, etc.)
+│   │   └── main.py         # FastAPI app entry point
+│   ├── tests/              # Pytest automated tests
+│   ├── .env                # Environment variables (credentials)
+│   ├── requirements.txt    # Python dependencies
+│   └── Dockerfile          # Dockerfile for backend service
+├── frontend/
+│   ├── src/
+│   │   ├── screens/        # Top-level screen components
+│   │   ├── components/     # Reusable components (forms, chat, etc.)
+│   │   ├── navigation/     # React Navigation setup
+│   │   ├── store/          # Zustand global state management (auth)
+│   │   ├── services/       # API client (axios)
+│   │   ├── utils/          # Theme, helpers, and profile schema
+│   │   └── __tests__/      # Jest unit tests
+│   ├── App.tsx             # Root component of the Expo app
+│   └── package.json        # Node.js dependencies and scripts
+├── docker-compose.yml      # Docker Compose configuration for services
+└── deploy.sh               # Unified deployment script
 ```
-
-**Terminal 2 – Frontend:**
-```bash
-cd other_us
-python3 frontend/app.py
-```
-
----
-## API Endpoints
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| `POST` | `/auth/register` | No | Register with email/password |
-| `POST` | `/auth/token` | No | Login with email/password |
-| `GET` | `/auth/google/login` | No | Get Google OAuth URL |
-| `GET` | `/auth/google/callback` | No | Google OAuth callback |
-| `GET` | `/auth/github/login` | No | Get GitHub OAuth URL |
-| `GET` | `/auth/github/callback` | No | GitHub OAuth callback |
-| `GET` | `/users/me` | Yes | Get my full profile |
-| `PUT` | `/users/me` | Yes | Update my profile |
-| `DELETE` | `/users/me` | Yes | Delete my account |
-| `GET` | `/users/{user_id}` | Yes | Get any user's public profile |
-| `GET` | `/users/search/query?q=...` | Yes | Search users |
-| `GET` | `/health` | No | Health check |
-
-**Interactive API docs:** http://localhost:8081/docs
----
-
-## OAuth Configuration
-
-### Google OAuth
-The Google OAuth callback URL must be registered in the [Google Cloud Console](https://console.cloud.google.com/):
-- **Authorized redirect URI**: `http://localhost:8081/auth/google/callback`
-
-### GitHub OAuth
-The GitHub OAuth callback URL must be registered in [GitHub Developer Settings](https://github.com/settings/developers):
-- **Authorization callback URL**: `http://localhost:8081/auth/github/callback`
-
-### OAuth Flow (Desktop App)
-1. User clicks "Continue with Google/GitHub"
-2. App fetches the authorization URL from the backend
-3. System browser opens the OAuth provider's login page
-4. After login, the provider redirects to `http://localhost:8081/auth/{provider}/callback`
-5. Backend exchanges the code for a token, creates/updates the user, and redirects to `http://localhost:8550/oauth_callback?token=...`
-6. The Flet app's embedded callback server (port 8550) receives the token
-7. The app automatically logs in and navigates to the home screen
-
----
-
-## Environment Variables (`.env`)
-
-```env
-# Google OAuth
-GOOGLE_CLIENT_ID=...
-GOOGLE_CLIENT_SECRET=...
-GOOGLE_REDIRECT_URI=http://localhost:8081/auth/google/callback
-
-# GitHub OAuth
-GITHUB_CLIENT_ID=...
-GITHUB_CLIENT_SECRET=...
-GITHUB_REDIRECT_URI=http://localhost:8081/auth/github/callback
-
-# Redis
-REDIS_URL=redis://localhost:6379
-REDIS_PASSWORD=...
-
-# JWT
-SECRET_KEY=...
-ALGORITHM=HS256
-ACCESS_TOKEN_EXPIRE_MINUTES=60
-```
----
-## Redis Data Model
-| Key Pattern | Type | Description |
-|-------------|------|-------------|
-| `user:{uuid}` | String (JSON) | Full user object |
-| `email_to_id:{email}` | String | Maps email → user_id |
-| `users:all` | Set | All user IDs (for search) |
-| `oauth_state:{state}` | String (TTL 600s) | CSRF state for OAuth flows |
-
----
-
-## Design System
-
-The app uses a **deep space / cosmic** visual theme:
-
-| Color | Hex | Usage |
-|-------|-----|-------|
-| Deep Space | `#0A0E1A` | Page background |
-| Nebula Mid | `#1F2937` | Card backgrounds |
-| Cosmic Purple | `#7C3AED` | Primary actions |
-| Aurora Teal | `#06B6D4` | Secondary / highlights |
-| Star White | `#F9FAFB` | Primary text |
-| Danger Red | `#EF4444` | Destructive actions |
-
----
-
-## License
-
-AGPL-3.0 license https://github.com/other-realm/otherus/blob/main/LICENSE

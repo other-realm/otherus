@@ -1,0 +1,22 @@
+name: other_us
+channels:
+  - conda-forge
+dependencies:
+- pip
+- python=3.12
+# - hvPlot
+# - pip:
+#   - huggingface_hub
+#   - langgraph[all]
+#   - torch
+#   - torchvision
+#   - torchaudio
+#   - gym
+#   - langchain
+#   - langchain-community
+#   - langchain-chroma
+#   - transformers
+#   - ollama
+#   - streamlit
+#   - elasticsearch
+#   - elasticsearch-dsl
