@@ -41,6 +41,10 @@ async def json_get(key: str, path: str = ".") -> Optional[Any]:
     raw = await r.execute_command("JSON.GET", key, path)
     if raw is None:
         return None
+    # Handle case where raw is already a dict (from decode_responses=True)
+    if isinstance(raw, dict):
+        return raw
+    # Otherwise, parse the JSON string
     return json.loads(raw)
 
 
