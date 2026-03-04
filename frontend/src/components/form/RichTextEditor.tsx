@@ -11,7 +11,6 @@ interface RichTextEditorProps {
   onChange: (html: string) => void;
   minHeight?: number;
 }
-
 const QUILL_HTML = (initialValue: string, minHeight: number) => `
 <!DOCTYPE html>
 <html>
@@ -54,7 +53,6 @@ const QUILL_HTML = (initialValue: string, minHeight: number) => `
 </script>
 </body>
 </html>`;
-
 export default function RichTextEditor({
   value,
   onChange,
@@ -62,7 +60,6 @@ export default function RichTextEditor({
 }: RichTextEditorProps) {
   const webviewRef = useRef<any>(null);
   const iframeRef = useRef<HTMLIFrameElement | null>(null);
-
   if (Platform.OS === 'web') {
     // Web: render an iframe with Quill
     useEffect(() => {
@@ -77,7 +74,6 @@ export default function RichTextEditor({
       window.addEventListener('message', handleMessage);
       return () => window.removeEventListener('message', handleMessage);
     }, [onChange]);
-
     return (
       <View style={[styles.container, { minHeight: minHeight + 44 }]}>
         <iframe
