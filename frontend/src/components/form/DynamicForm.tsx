@@ -5,7 +5,7 @@
  *   input, editor, image, editable_input_array, radio,
  *   slider_group, 2_slider_group, map
  */
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
   View,
   Text,
@@ -68,15 +68,19 @@ interface MapField extends BaseField {
 interface DynamicFormProps {
   schema: FormSchema;
   initialValues?: Record<string, any>;
-  onSubmit: (values: Record<string, any>) => void;
+  onSubmit?: (values: Record<string, any>) => void;
+  onChange?: (values: Record<string, any>) => void;
   loading?: boolean;
+  showSaveButton?: boolean;
 }
 
 export default function DynamicForm({
   schema,
   initialValues = {},
   onSubmit,
+  onChange,
   loading = false,
+  showSaveButton = false,
 }: DynamicFormProps) {
   const [values, setValues] = useState<Record<string, any>>(() => {
     const init: Record<string, any> = {};
@@ -112,8 +116,17 @@ export default function DynamicForm({
     return init;
   });
 
+  // Notify parent of every change for auto-save
+  const onChangeRef = useRef(onChange);
+  useEffect(() => { onChangeRef.current = onChange; }, [onChange]);
+
   const update = useCallback((key: string, val: any) => {
-    setValues((prev) => ({ ...prev, [key]: val }));
+    setValues((prev) => {
+      const next = { ...prev, [key]: val };
+      // Fire onChange asynchronously so state has settled
+      setTimeout(() => onChangeRef.current?.(next), 0);
+      return next;
+    });
   }, []);
 
   const renderField = (key: string, field: FieldDef) => {
@@ -275,12 +288,14 @@ export default function DynamicForm({
         if (key === 'id') return null;
         return renderField(key, field as FieldDef);
       })}
-      <Button
-        title="Save Profile"
-        onPress={() => onSubmit(values)}
-        loading={loading}
-        style={styles.submitBtn}
-      />
+      {showSaveButton && onSubmit && (
+        <Button
+          title="Save Profile"
+          onPress={() => onSubmit(values)}
+          loading={loading}
+          style={styles.submitBtn}
+        />
+      )}
     </ScrollView>
   );
 }
