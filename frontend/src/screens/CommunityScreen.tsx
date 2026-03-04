@@ -145,7 +145,6 @@ export default function CommunityScreen() {
             </Card>
         </TouchableOpacity>
     );
-
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header */}
@@ -153,7 +152,6 @@ export default function CommunityScreen() {
                 <Text style={styles.title}>Community</Text>
                 <Text style={styles.subtitle}>{profiles.length} members</Text>
             </View>
-
             {/* Search */}
             <View style={styles.searchRow}>
                 <TextInput
@@ -164,7 +162,6 @@ export default function CommunityScreen() {
                     onChangeText={setSearch}
                 />
             </View>
-
             {/* Tabs */}
             <View style={styles.tabs}>
                 <TouchableOpacity
