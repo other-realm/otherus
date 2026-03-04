@@ -109,7 +109,6 @@ export default function CommunityScreen() {
         };
         load();
     }, []);
-
     const filtered = useMemo(() => {
         if (!search.trim()) return profiles;
         const q = search.toLowerCase();
@@ -119,10 +118,8 @@ export default function CommunityScreen() {
                 JSON.stringify(p.data).toLowerCase().includes(q)
         );
     }, [profiles, search]);
-
     const wantsChart = useMemo(() => extractSliderValues(profiles, 'wants'), [profiles]);
     const sharingChart = useMemo(() => extractSliderValues(profiles, 'sharing'), [profiles]);
-
     const renderMember = ({ item }: { item: Profile }) => (
         <TouchableOpacity
             onPress={() => navigation.navigate('ProfileDetail', { userId: item.user_id })}
