@@ -11,13 +11,11 @@ from app.services.redis_service import json_set, json_get, keys_matching
 from app.utils.jwt_utils import create_access_token
 router = APIRouter(prefix="/auth", tags=["auth"])
 settings = get_settings()
-print(settings)
 # ── Helpers ───────────────────────────────────────────────────────────────────
 async def _find_user_by_provider(provider: str, provider_id: str) -> dict | None:
     keys = await keys_matching("user:*")
     for key in keys:
         user = await json_get(key)
-        print(user)
         if user and user.get("provider") == provider and user.get("provider_id") == str(provider_id):
             return user
     return None

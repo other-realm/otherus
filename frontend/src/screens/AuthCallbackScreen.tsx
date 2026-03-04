@@ -13,24 +13,20 @@ export default function AuthCallbackScreen() {
             try {
                 // Token arrives as a query param: /auth-callback?token=...
                 let token: string | null = null;
-
                 if (typeof window !== 'undefined') {
                     const params = new URLSearchParams(window.location.search);
                     token = params.get('token');
                 } else if (route.params?.token) {
                     token = route.params.token;
                 }
-
                 if (!token) {
                     navigation.replace('Login');
                     return;
                 }
-
                 // Fetch user info with the token
                 const res = await api.get('/auth/me', {
                     headers: { Authorization: `Bearer ${token}` },
                 });
-
                 await setAuth(token, res.data);
                 navigation.replace('Main');
             } catch (err) {
@@ -38,10 +34,8 @@ export default function AuthCallbackScreen() {
                 navigation.replace('Login');
             }
         };
-
         handleCallback();
     }, []);
-
     return (
         <View style={styles.container}>
             <ActivityIndicator size="large" color={Colors.primary} />
@@ -49,7 +43,6 @@ export default function AuthCallbackScreen() {
         </View>
     );
 }
-
 const styles = StyleSheet.create({
     container: {
         flex: 1,
