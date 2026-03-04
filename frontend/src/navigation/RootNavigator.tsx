@@ -10,6 +10,7 @@ import { Colors } from '../utils/theme';
 import LoginScreen from '../screens/LoginScreen';
 import AuthCallbackScreen from '../screens/AuthCallbackScreen';
 import MainTabNavigator from './MainTabNavigator';
+import ProfileDetailScreen from '../screens/ProfileDetailScreen';
 import ChatRoomScreen from '../screens/ChatRoomScreen';
 import ExperimentDetailScreen from '../screens/ExperimentDetailScreen';
 import ExperimentEditorScreen from '../screens/ExperimentEditorScreen';
@@ -31,6 +32,7 @@ const linking = {
           Settings: 'settings',
         },
       },
+      ProfileDetail: 'profile/:userId',
       ChatRoom: 'chat/:roomId',
       ExperimentDetail: 'experiments/:experimentId',
       ExperimentEditor: 'experiments/:experimentId/edit',
@@ -67,6 +69,7 @@ export default function RootNavigator() {
         {user ? (
           <>
             <Stack.Screen name="Main" component={MainTabNavigator} />
+            <Stack.Screen name="ProfileDetail" component={ProfileDetailScreen} />
             <Stack.Screen name="ChatRoom" component={ChatRoomScreen} />
             <Stack.Screen name="ExperimentDetail" component={ExperimentDetailScreen} />
             <Stack.Screen name="ExperimentEditor" component={ExperimentEditorScreen} />
