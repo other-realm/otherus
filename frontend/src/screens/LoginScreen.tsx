@@ -3,17 +3,14 @@ import {
     View,
     Text,
     StyleSheet,
-    Image,
-    Platform,
     Linking,
 } from 'react-native';
-import * as WebBrowser from 'expo-web-browser';
 import { useNavigation } from '@react-navigation/native';
 import { Button } from '../components/shared/Button';
 import { Colors, Spacing, FontSize, Radius } from '../utils/theme';
 import { useAuthStore } from '../store/authStore';
 import { API_BASE } from '../services/api';
-WebBrowser.maybeCompleteAuthSession();
+
 export default function LoginScreen() {
     const navigation = useNavigation<any>();
     const { user } = useAuthStore();
@@ -24,19 +21,11 @@ export default function LoginScreen() {
     }, [user]);
     const handleGoogleLogin = async () => {
         const url = `${API_BASE}/auth/google/login`;
-        if (Platform.OS === 'web') {
-            window.location.href = url;
-        } else {
-            await WebBrowser.openBrowserAsync(url);
-        }
+        await Linking.openURL(url);
     };
     const handleGitHubLogin = async () => {
         const url = `${API_BASE}/auth/github/login`;
-        if (Platform.OS === 'web') {
-            window.location.href = url;
-        } else {
-            await WebBrowser.openBrowserAsync(url);
-        }
+        await Linking.openURL(url);
     };
     return (
         <View style={styles.container}>

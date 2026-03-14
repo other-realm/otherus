@@ -5,14 +5,14 @@ export const PROFILE_SCHEMA: FormSchema = {
   id: 'sub' as any,
   profile_image: {
     type: 'image',
-    label: "Profile Picture (be sure to click the upload icon):",
+    label: "Profile Picture:",
     src: '',
   } as any,
   urls: {
     type: 'editable_input_array',
     label: 'Do you have any social media or other interesting links to share (ex. https://ic.org/directory/..)?',
     value: [],
-  } as any,
+  } as img,
   transhumanist_ideas: {
     type: 'editor',
     label: 'What transhumanist ideas do you want to work on together and test for their efficacy? (ex: quantum entanglement, testing or refuting current claims of telepathy; use of an array of interconnected assembloids as an organic living server that interfaces with an EEG/TMS system, extra…)',

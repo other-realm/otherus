@@ -319,7 +319,20 @@ function ImageUploadField({ value, onChange }: { value: string; onChange: (v: st
     });
     if (!result.canceled && result.assets[0]) {
       const asset = result.assets[0];
-      onChange(asset.uri);
+      // DEBUG: Log what we're getting
+      console.log('[ImageUpload] asset.uri type:', typeof asset.uri, 'value:', asset.uri?.substring(0, 50));
+      console.log('[ImageUpload] has base64:', !!asset.base64);
+      
+      // Convert to data URI to avoid blob URL security errors
+      if (asset.base64) {
+        const mimeType = asset.uri?.match(/\.(jpe?g|png|gif|webp)$/i)?.[1] || 'jpeg';
+        const dataUri = `data:image/${mimeType};base64,${asset.base64}`;
+        console.log('[ImageUpload] Converted to data URI, length:', dataUri.length);
+        onChange(dataUri);
+      } else {
+        console.warn('[ImageUpload] No base64 data available, falling back to URI');
+        onChange(asset.uri);
+      }
     }
   };
 

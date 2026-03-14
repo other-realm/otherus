@@ -6,7 +6,6 @@ import {
     View,
     Text,
     StyleSheet,
-    ScrollView,
     ActivityIndicator,
     TouchableOpacity,
     Image,
@@ -67,17 +66,17 @@ export default function ProfileDetailScreen() {
 
     if (loading) {
         return (
-            <SafeAreaView style={styles.container} edges={['top']}>
+            <View style={styles.container} edges={['top']}>
                 <View style={styles.center}>
                     <ActivityIndicator size="large" color={Colors.primary} />
                 </View>
-            </SafeAreaView>
+            </View>
         );
     }
 
     if (error || !profile) {
         return (
-            <SafeAreaView style={styles.container} edges={['top']}>
+            <View style={styles.container} edges={['top']}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <Text style={styles.backButton}>← Back</Text>
@@ -86,20 +85,18 @@ export default function ProfileDetailScreen() {
                 <View style={styles.center}>
                     <Text style={styles.errorText}>{error || 'Profile not found'}</Text>
                 </View>
-            </SafeAreaView>
+            </View>
         );
     }
-
     return (
-        <SafeAreaView style={styles.container} edges={['top']}>
+        <View style={styles.container} edges={['top']}>
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Text style={styles.backButton}>← Back</Text>
                 </TouchableOpacity>
             </View>
-
-            <ScrollView style={styles.content} contentContainerStyle={styles.contentContainer}>
+            <View style={styles.content}>
                 {/* Avatar & Name */}
                 <View style={styles.profileHeader}>
                     {profile.avatar_url ? (
@@ -144,13 +141,14 @@ export default function ProfileDetailScreen() {
                         )}
                     </Card>
                 ))}
-            </ScrollView>
-        </SafeAreaView>
+            </View>
+        </View >
     );
 }
 
 const styles = StyleSheet.create({
-    container: { flex: 1, backgroundColor: Colors.background },
+    body:{overflow:'scroll'},
+    container: { flex: 1, backgroundColor: Colors.background, overflow: 'scroll' },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     header: {
         paddingHorizontal: Spacing.md,
@@ -163,8 +161,8 @@ const styles = StyleSheet.create({
         fontSize: FontSize.md,
         fontWeight: '600',
     },
-    content: { flex: 1 },
-    contentContainer: { padding: Spacing.md, paddingBottom: Spacing.xl },
+    content: { flex: 1, overflow: 'scroll' },
+    contentContainer: { padding: Spacing.md, paddingBottom: Spacing.xl, overflow: 'scroll' },
     profileHeader: {
         alignItems: 'center',
         marginBottom: Spacing.lg,
