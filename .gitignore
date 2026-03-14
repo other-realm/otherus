@@ -402,7 +402,6 @@ Modules/
 data/
 micromamba/
 etry-clean-cach/
-models/
 MovementAnalysis/
 camel_oshoe_files/
 pytorchgeonodes/
