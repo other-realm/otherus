@@ -37,7 +37,7 @@ export default function LoginScreen() {
         } else {
             await WebBrowser.openBrowserAsync(url);
         }
-    };F
+    };
     return (
         <View style={styles.container}>
             <View style={styles.hero}>

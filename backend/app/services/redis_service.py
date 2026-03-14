@@ -11,7 +11,6 @@ async def get_redis() -> aioredis.Redis:
     global _redis
     if _redis is None:
         settings = get_settings()
-        print(settings.redis_username)
         _redis = aioredis.from_url(
             settings.redis_url,
             username=settings.redis_username,
@@ -37,7 +36,6 @@ async def json_set(key: str, path: str, value: Any) -> None:
 
 async def json_get(key: str, path: str = ".") -> Optional[Any]:
     r = await get_redis()
-    print("key: ",key,"path:",path,'r: ',r)
     raw = await r.execute_command("JSON.GET", key, path)
     if raw is None:
         return None

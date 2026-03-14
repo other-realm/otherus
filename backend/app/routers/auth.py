@@ -16,6 +16,7 @@ async def _find_user_by_provider(provider: str, provider_id: str) -> dict | None
     keys = await keys_matching("user:*")
     for key in keys:
         user = await json_get(key)
+        print('user: ',user," key: ",key,"provider: ",provider,"provider_id: ",provider_id)
         if user and user.get("provider") == provider and user.get("provider_id") == str(provider_id):
             return user
     return None
@@ -82,6 +83,8 @@ async def google_callback(code: str, state: str | None = None):
 
         resp = await client.get("https://www.googleapis.com/oauth2/v3/userinfo")
         info = resp.json()
+    
+    print("code:",code,"state:",state,"token:",token,"info:",info)
     user = await _upsert_user(
         provider="google",
         provider_id=info["sub"],

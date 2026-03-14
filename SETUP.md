@@ -176,5 +176,4 @@ See `deploy.sh` for automated deployment scripts.
 4. Submit a pull request
 
 ## License
-
-MIT
+AGPL-3.0 License
