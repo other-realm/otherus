@@ -33,8 +33,7 @@ export default function LoginScreen() {
                 <Text style={styles.logo}>⟁</Text>
                 <Text style={styles.title}>Other Us</Text>
                 <Text style={styles.subtitle}>
-                    A community for exploring consciousness,{'\n'}
-                    intentional living, and collaborative research.
+                    A community for exploring collaborative research.
                 </Text>
             </View>
             <View style={styles.authBox}>

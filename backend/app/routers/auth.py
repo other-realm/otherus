@@ -102,9 +102,10 @@ async def github_login():
     """Redirect the user to GitHub's OAuth consent screen."""
     params = (
         f"client_id={settings.github_client_id}"
-        f"&redirect_uri={settings.google_redirect_uri.replace('google', 'github')}"
-        f"&scope=read:user user:email"
+        f"&redirect_uri={settings.github_redirect_uri}"
+        f"&scope=read:user%20user:email"
     )
+    print("Redirecting to GitHub with params:", f"https://github.com/login/oauth/authorize?{params}")
     return RedirectResponse(f"https://github.com/login/oauth/authorize?{params}")
 @router.get("/github/callback")
 async def github_callback(code: str):
@@ -119,6 +120,7 @@ async def github_callback(code: str):
             },
             headers={"Accept": "application/json"},
         )
+        print("GitHub token response:", token_resp.text)
         token_data = token_resp.json()
         access_token = token_data.get("access_token")
         if not access_token:
@@ -133,6 +135,7 @@ async def github_callback(code: str):
             emails = emails_resp.json()
             primary = next((e for e in emails if e.get("primary")), None)
             email = primary["email"] if primary else f"{gh_user['login']}@github.local"
+        print("GitHub user info:", gh_user, "email:", email)
     user = await _upsert_user(
         provider="github",
         provider_id=str(gh_user["id"]),
