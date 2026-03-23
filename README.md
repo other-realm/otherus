@@ -116,7 +116,7 @@ If you prefer to set up the backend manually without the `deploy.sh` script, fol
     ```bash
     uvicorn app.main:app  --host 0.0.0.0 --port 8081 --log-level debug --reload
     ```
-    The API will be available at `http://localhost:8080`.
+    The API will be available at `http://localhost:8081`.
 
 ### Frontend Setup 
 
