@@ -2,7 +2,9 @@
 
 **Other Us** is a full-stack, cross-platform social networking application designed for communities interested in consciousness research, transhumanism, and intentional living. This document provides a complete guide to the project architecture, setup, and operation.
 
-This project was templated by **Manus AI** and then fleshed out manually after that.
+This mostly a project that was was templated by **Manus AI** and then fleshed out manually after that.
+
+The first version (main.py) was hand coded entirely in NiceGUI and can be found at https://otherus.otherrealm.org .  It has a bunch of bugs, and is not being actively developed, because the framework is not really something that can scale and the API is still (in my own opinion) in beta.  Spend a lot time on it though 🙄.
 
 ## Project Overview
 
