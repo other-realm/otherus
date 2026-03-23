@@ -46,10 +46,6 @@ The application consists of two main parts:
 - **Node.js 18+** & `npm`
 - **Expo CLI**: `npm install -g expo-cli`
 
-### Deployment with `deploy.sh`
-
-For a streamlined setup, use the provided `deploy.sh` script. This script will:
-
 1.  Verify Docker and Docker Compose installations.
 2.  Check for required environment variables (OAuth credentials, etc.).
 3.  Build and start the backend services (FastAPI, Redis, RabbitMQ) using Docker Compose.
