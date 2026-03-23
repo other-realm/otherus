@@ -37,9 +37,19 @@ export default function LoginScreen() {
                 </Text>
             </View>
             <View style={styles.authBox}>
-                <Text style={styles.authTitle}>Sign in to continue</Text>
+                <Text style={styles.authTitle}>Signup to get involved!</Text>
                 <Button
-                    title="Continue with Google"
+                    title="Signup with Email"
+                    onPress={handleGoogleLogin}
+                    style={styles.emailBtn}
+                />
+                <View style={styles.divider}>
+                    <View style={styles.dividerLine} />
+                    <Text style={styles.dividerText}>or</Text>
+                    <View style={styles.dividerLine} />
+                </View>
+                <Button
+                    title="Signup with Google"
                     onPress={handleGoogleLogin}
                     style={styles.googleBtn}
                 />
@@ -49,7 +59,7 @@ export default function LoginScreen() {
                     <View style={styles.dividerLine} />
                 </View>
                 <Button
-                    title="Continue with GitHub"
+                    title="Signup with GitHub"
                     onPress={handleGitHubLogin}
                     variant="outline"
                     style={styles.githubBtn}
@@ -105,6 +115,10 @@ const styles = StyleSheet.create({
         color: Colors.text,
         marginBottom: Spacing.lg,
         textAlign: 'center',
+    },
+    emailBtn: {
+        backgroundColor: '#890909',
+        marginBottom: Spacing.sm,
     },
     googleBtn: {
         backgroundColor: '#4285F4',

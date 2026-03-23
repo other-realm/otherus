@@ -99,8 +99,17 @@ export default function ProfileDetailScreen() {
             <View style={styles.content}>
                 {/* Avatar & Name */}
                 <View style={styles.profileHeader}>
+                    {/* Diagnostic logging */}
+                    {console.log('ProfileDetailScreen - avatar_url:', profile.avatar_url)}
+                    {console.log('ProfileDetailScreen - avatar_url type:', typeof profile.avatar_url)}
+                    {console.log('ProfileDetailScreen - avatar_url truthy?:', !!profile.avatar_url)}
                     {profile.avatar_url ? (
-                        <Image source={{ uri: profile.avatar_url }} style={styles.avatar} />
+                        <Image
+                            source={{ uri: profile.avatar_url }}
+                            style={styles.avatar}
+                            onError={(error) => console.log('Image load error:', error.nativeEvent.error)}
+                            onLoad={() => console.log('Image loaded successfully:', profile.avatar_url)}
+                        />
                     ) : (
                         <View style={styles.avatarFallback}>
                             <Text style={styles.avatarInitial}>{profile.user_name[0]?.toUpperCase()}</Text>
@@ -127,9 +136,22 @@ export default function ProfileDetailScreen() {
                                     Object.entries(value.items).map(([itemKey, itemValue]: [string, any]) => (
                                         <View key={itemKey} style={styles.dataItem}>
                                             <Text style={styles.itemLabel}>{itemValue.label || itemKey}</Text>
-                                            <Text style={styles.itemValue}>
-                                                {typeof itemValue === 'object' ? itemValue.value ?? 'N/A' : itemValue}
-                                            </Text>
+                                            <div style={styles.itemValue}>
+                                                {((itemValue.label || itemKey) == "Profile Image") ? (
+                                                    console.log(itemValue.label),
+                                                    <Image
+                                                        source={itemValue.value}
+                                                        style={styles.itemValue}
+                                                        onError={(error) => console.log('Image load error:', error.nativeEvent.error)}
+                                                        onLoad={() => console.log('Image loaded successfully:', itemValue.value)}
+                                                    />
+                                                ) : (
+                                                    <Text style={styles.itemLabel}>{itemValue.label || itemKey}
+                                                        console.log(itemValue.label),
+                                                        {typeof itemValue === 'object' ? itemValue.value ?? 'N/A' : itemValue}
+                                                    </Text>
+                                                )}
+                                            </div>
                                         </View>
                                     ))
                                 ) : (
@@ -147,7 +169,7 @@ export default function ProfileDetailScreen() {
 }
 
 const styles = StyleSheet.create({
-    body:{overflow:'scroll'},
+    body: { overflow: 'scroll' },
     container: { flex: 1, backgroundColor: Colors.background, overflow: 'scroll' },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     header: {
