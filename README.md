@@ -2,7 +2,7 @@
 
 **Other Us** is a full-stack, cross-platform social networking application designed for communities interested in consciousness research, transhumanism, and intentional living. This document provides a complete guide to the project architecture, setup, and operation.
 
-This project was built by **Manus AI** based on the detailed specifications provided.
+This project was templated by **Manus AI** and then fleshed out manually after that.
 
 ## Project Overview
 
@@ -46,10 +46,6 @@ The application consists of two main parts:
 - **Node.js 18+** & `npm`
 - **Expo CLI**: `npm install -g expo-cli`
 
-### Deployment with `deploy.sh`
-
-For a streamlined setup, use the provided `deploy.sh` script. This script will:
-
 1.  Verify Docker and Docker Compose installations.
 2.  Check for required environment variables (OAuth credentials, etc.).
 3.  Build and start the backend services (FastAPI, Redis, RabbitMQ) using Docker Compose.
@@ -57,36 +53,7 @@ For a streamlined setup, use the provided `deploy.sh` script. This script will:
 
 **Usage:**
 
-1.  **Navigate to the project root directory**:
-    ```bash
-    cd other-us
-    ```
-
-2.  **Set Environment Variables**: Before running the script, ensure you have set the necessary environment variables for your OAuth credentials. These should be exported in your shell session or managed via a `.env` file that the script can source (though the script currently expects them to be exported).
-    ```bash
-    export GOOGLE_CLIENT_ID="your_google_client_id"
-    export GOOGLE_CLIENT_SECRET="your_google_client_secret"
-    export GITHUB_CLIENT_ID="your_github_client_id"
-    export GITHUB_CLIENT_SECRET="your_github_client_secret"
-    export COOKIE_SECRET="a_long_random_string_for_cookie_encryption"
-    export SERVER_METADATA_URL="https://accounts.google.com/.well-known/openid-configuration"
-    export REDIRECT_URI="http://localhost:8080/auth"
-    export SCOPES="openid email profile"
-    ```
-
-3.  **Make the script executable**:
-    ```bash
-    chmod +x deploy.sh
-    ```
-
-4.  **Run the deployment script**:
-    ```bash
-    ./deploy.sh
-    ```
-
-    The script will output instructions on how to start the frontend application after the backend services are up and running.
-
-### Manual Backend Setup (Alternative to `deploy.sh`)
+### Backend Setup
 
 If you prefer to set up the backend manually without the `deploy.sh` script, follow these steps:
 
@@ -106,21 +73,48 @@ If you prefer to set up the backend manually without the `deploy.sh` script, fol
     pip install -r requirements.txt
     ```
 
-4.  **Configure Environment**: Copy the `.env.example` to `.env` and fill in your credentials. The provided Google credentials are included, but you must add your **GitHub Client Secret**.
+4.  **Configure Environment**: Create the `.env` file and fill in your credentials. 
     ```bash
-    cp .env.example .env
+    # ── App ──────────────────────────────────────────────────────────────────────
+    APP_NAME="Other Us"
+    APP_ENV=development
+    SECRET_KEY="------------------"
+    FRONTEND_URL=http://localhost:8765
+    # ── Google OAuth ──────────────────────────────────────────────────────────────
+    GOOGLE_CLIENT_ID=~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    GOOGLE_CLIENT_SECRET=~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    GOOGLE_REDIRECT_URI=http://localhost:8081/auth/google/callback
+    GOOGLE_SERVER_METADATA_URL=https://accounts.google.com/.well-known/openid-configuration
+    COOKIE_SECRET=
+    # ── GitHub OAuth ──────────────────────────────────────────────────────────────
+    GITHUB_CLIENT_ID=~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    GITHUB_CLIENT_SECRET=~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    CLIENT_ID=~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    CLIENT_SECRET=~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    GITHUB_REDIRECT_URI=http://localhost:8081/auth/github/callback
+    # ── Redis (RedisJSON) ─────────────────────────────────────────────────────────
+    REDIS_URL=redis://10.0.0.90:6379
+    REDIS_PASSWORD=~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    REDIS_USER='admin'
+    random_secret="~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~"
+    # ── RabbitMQ ──────────────────────────────────────────────────────────────────
+    RABBITMQ_URL=amqp://admin:~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~@localhost:5672/
+    # ── ntfy.sh push notifications ───────────────────────────────────────────────
+    NTFY_BASE_URL=https://ntfy.sh
+    NTFY_TOPIC_PREFIX=other-us
+    # ── JWT ───────────────────────────────────────────────────────────────────────
+    JWT_ALGORITHM=HS256
+    ACCESS_TOKEN_EXPIRE_MINUTES=1440
     # Edit .env and add your GITHUB_CLIENT_SECRET
     ```
 
 5.  **Run the server**:
     ```bash
-    uvicorn app.main:app --host 0.0.0.0 --port 8080 --reload
+    uvicorn app.main:app  --host 0.0.0.0 --port 8081 --log-level debug --reload
     ```
-    The API will be available at `http://localhost:8080`.
+    The API will be available at `http://localhost:8081`.
 
-### Manual Frontend Setup (Alternative to `deploy.sh`)
-
-If you prefer to set up the frontend manually without the `deploy.sh` script, follow these steps:
+### Frontend Setup 
 
 1.  **Navigate to the frontend directory**:
     ```bash
@@ -135,16 +129,9 @@ If you prefer to set up the frontend manually without the `deploy.sh` script, fo
 3.  **Run the application**:
     - **For Web**:
       ```bash
-      npm run web
+      npx expo start -p 8765
       ```
-    - **For iOS** (requires macOS and Xcode or the Expo Go app):
-      ```bash
-      npm run ios
-      ```
-    - **For Android** (requires Android Studio or the Expo Go app):
-      ```bash
-      npm run android
-      ```
+    
 
 The Expo development server will start, and you can access the application in your browser, simulator, or on a physical device via the Expo Go app.
 
