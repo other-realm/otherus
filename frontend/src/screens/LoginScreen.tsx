@@ -19,6 +19,10 @@ export default function LoginScreen() {
             navigation.replace('Main');
         }
     }, [user]);
+    const handleEmailLogin = async () => {
+        const url = `${API_BASE}/auth/email/login`;
+        await Linking.openURL(url);
+    };
     const handleGoogleLogin = async () => {
         const url = `${API_BASE}/auth/google/login`;
         await Linking.openURL(url);
@@ -40,8 +44,9 @@ export default function LoginScreen() {
                 <Text style={styles.authTitle}>Signup to get involved!</Text>
                 <Button
                     title="Signup with Email"
-                    onPress={handleGoogleLogin}
+                    onPress={handleEmailLogin}
                     style={styles.emailBtn}
+                    target="_self"
                 />
                 <View style={styles.divider}>
                     <View style={styles.dividerLine} />

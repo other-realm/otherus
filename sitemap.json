@@ -19,7 +19,7 @@
                         "n-back":{
                             "type":"component",
                             "title":"N-Back",
-                            "label":"A modifications to the classic 'N-Back' memory test, where words flash on the screen and you need to remember whether the word flashed 'N' iterations in the past is now showing again or if the word is new.  In this version you may also have words that are given to someone else in this mix that you need to try and decern if they had that word, if you had that word, or if no one had it.  There will be two versions, the standard random-word-flash and a sentence construction version where people need to create the same sentence without communicating externally at all.",
+                            "label":"A modifications to the classic 'N-Back' memory test, where characters/words flash on the screen and you need to remember whether the word that flashed 'N' iterations in the past is now showing again or if the word is new.  In this version you may also have objects that are given to someone else in this mix that you need to try and decern if they had that word, if you had that word, or if no one had it.  There will be several versions, the standard random letter that flashes by, a random symbol/graphic flash version, a random word flash, and a sentence construction version where people need to create the same sentence without communicating externally at all.",
                             "value":{
                                 "random":{
                                     "type":"button",
@@ -332,7 +332,7 @@
                     }
                 },
                 "tasks":{
-                    
+
                 }
             }
         }

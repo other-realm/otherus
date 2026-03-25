@@ -7,7 +7,10 @@ from pydantic import BaseModel, EmailStr
 from app.services.redis_service import json_get, json_set
 from app.utils.jwt_utils import create_access_token
 from app.utils.password_utils import hash_password, verify_password
-router = APIRouter(prefix="/auth/email", tags=["auth"])
+from app.config import get_settings
+router = APIRouter(prefix="/auth", tags=["auth"])
+print(router.prefix)
+settings = get_settings()
 class RegisterRequest(BaseModel):
     """Email/password registration request."""
     email: EmailStr
@@ -73,9 +76,10 @@ async def register(req: RegisterRequest):
         token_type="bearer",
         user=user_response,
     )
-@router.post("/login", response_model=AuthResponse)
+@router.post("/email/login", response_model=AuthResponse)
 async def login(req: LoginRequest):
     """Login with email and password."""
+    print(f"Login attempt for email: {req.email}")
     # Retrieve user by email
     user_ref = await json_get(f"user:email:{req.email.lower()}")
     if not user_ref:
