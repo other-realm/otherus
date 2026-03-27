@@ -4,7 +4,7 @@ from datetime import datetime, timezone
 from email_validator import validate_email, EmailNotValidError # type: ignore
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, EmailStr
-from app.services.redis_service import json_get, json_set
+from app.services.redis_service import json_get, json_set, json_mget, keys_matching
 from app.utils.jwt_utils import create_access_token
 from app.utils.password_utils import hash_password, verify_password
 from app.config import get_settings
@@ -77,20 +77,24 @@ async def register(req: RegisterRequest):
         token_type="bearer",
         user=user_response,
     )
+async def _find_user_by_email(email: str) -> dict | None:
+    """Scan all user:{id} documents and return the one matching the given email."""
+    # Get all keys matching user:{id} pattern (exactly one colon — excludes user:email:* etc.)
+    user_keys = [k for k in await keys_matching("user:*") if k.count(":") == 1]
+    if not user_keys:
+        return None
+    # Fetch all user documents in a single Redis round-trip
+    users = await json_mget(user_keys)
+    for user in users:
+        if user and user.get("email", "").lower() == email.lower():
+            return user
+    return None
 @router.post("/email/login", response_model=AuthResponse)
 async def login(req: LoginRequest):
     """Login with email and password."""
     print(f"Login attempt for email: {req.email}")
-    # Retrieve user by email
-    user_ref = await json_get(f"user:email:{req.email.lower()}")  # This should return something like {"id": "user_id"} if the email exists
-    print("User reference from Redis:",f"user:{req.email.lower()} ", user_ref)
-    if not user_ref:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid email or password.",
-        )
-    user_id = user_ref.get("id")
-    user = await json_get(f"user:{user_id}")
+    # Find user by scanning user:{id} documents for a matching email field
+    user = await _find_user_by_email(req.email.lower())
     if not user:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -102,6 +106,7 @@ async def login(req: LoginRequest):
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid email or password.",
         )
+    user_id = user["id"]
     # Generate token
     token = create_access_token({"sub": user_id})
     # Remove sensitive fields before returning
