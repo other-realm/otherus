@@ -47,11 +47,19 @@ export default function LoginScreen() {
     };
     const handleGoogleLogin = async () => {
         const url = `${API_BASE}/auth/google/login`;
-        await Linking.openURL(url);
+        if (typeof window !== 'undefined' && window.location) {
+            window.location.href = url;
+        } else {
+            await Linking.openURL(url);
+        }
     };
     const handleGitHubLogin = async () => {
         const url = `${API_BASE}/auth/github/login`;
-        await Linking.openURL(url);
+        if (typeof window !== 'undefined' && window.location) {
+            window.location.href = url;
+        } else {
+            await Linking.openURL(url);
+        }
     };
     const toggleMode = () => {
         setIsRegisterMode(!isRegisterMode);
