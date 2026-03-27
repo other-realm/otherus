@@ -45,7 +45,7 @@ async def json_mget(keys: list[str], path: str = ".") -> list[Optional[Any]]:
         return []
     r = await get_redis()
     raws = await r.execute_command("JSON.MGET", *keys, path)
-    return [json.loads(r) if r else None for r in raws]
+    return [json.loads(r) if r else None for r in raws] # pyright: ignore[reportOptionalIterable]
 async def keys_matching(pattern: str) -> list[str]:
     r = await get_redis()
     return await r.keys(pattern)
@@ -60,18 +60,18 @@ async def delete_key(key: str) -> int:
     return await r.delete(key)
 async def sadd(key: str, *members: str) -> int:
     r = await get_redis()
-    return await r.sadd(key, *members)
+    return await r.sadd(key, *members) # type: ignore
 async def smembers(key: str) -> set:
     r = await get_redis()
-    return await r.smembers(key)
+    return await r.smembers(key) # type: ignore
 async def srem(key: str, *members: str) -> int:
     r = await get_redis()
-    return await r.srem(key, *members)
+    return await r.srem(key, *members) # type: ignore
 async def lpush(key: str, *values: str) -> int:
     r = await get_redis()
-    return await r.lpush(key, *values)
+    return await r.lpush(key, *values) # type: ignore
 
 
 async def lrange(key: str, start: int, end: int) -> list[str]:
     r = await get_redis()
-    return await r.lrange(key, start, end)
+    return await r.lrange(key, start, end) # type: ignore
