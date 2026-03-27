@@ -38,7 +38,7 @@ export default function SettingsScreen() {
     };
     
     const confirmDelete = async () => {
-        console.log("del?")
+        console.log("del?");
         setDeletingAccount(true);
         try {
             console.log("58");
