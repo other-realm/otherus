@@ -13,6 +13,7 @@ import {
     ActivityIndicator,
     Image,
     Platform,
+    ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -120,31 +121,36 @@ export default function CommunityScreen() {
     }, [profiles, search]);
     const wantsChart = useMemo(() => extractSliderValues(profiles, 'wants'), [profiles]);
     const sharingChart = useMemo(() => extractSliderValues(profiles, 'sharing'), [profiles]);
-    const renderMember = ({ item }: { item: Profile }) => (
-        <TouchableOpacity
-            onPress={() => navigation.navigate('ProfileDetail', { userId: item.user_id })}
-        >
-            <Card style={styles.memberCard}>
-                <View style={styles.memberRow}>
-                    {item.avatar_url ? (
-                        <Image source={{ uri: item.avatar_url }} style={styles.avatar} />
-                    ) : (
-                        <View style={styles.avatarFallback}>
-                            <Text style={styles.avatarInitial}>{item.user_name[0]?.toUpperCase()}</Text>
+    const renderMember = ({ item }: { item: Profile }) => {
+        // Get the profile image - check profile_image in data first, then fall back to avatar_url
+        const profileImage = item.data?.profile_image || item.avatar_url;
+        
+        return (
+            <TouchableOpacity
+                onPress={() => navigation.navigate('ProfileDetail', { userId: item.user_id })}
+            >
+                <Card style={styles.memberCard}>
+                    <View style={styles.memberRow}>
+                        {profileImage ? (
+                            <Image source={{ uri: profileImage }} style={styles.avatar} />
+                        ) : (
+                            <View style={styles.avatarFallback}>
+                                <Text style={styles.avatarInitial}>{item.user_name[0]?.toUpperCase()}</Text>
+                            </View>
+                        )}
+                        <View style={{ flex: 1 }}>
+                            <Text style={styles.memberName}>{item.user_name}</Text>
+                            {item.data?.transhumanist_ideas ? (
+                                <Text style={styles.memberSnippet} numberOfLines={2}>
+                                    {item.data.transhumanist_ideas.replace(/<[^>]+>/g, '')}
+                                </Text>
+                            ) : null}
                         </View>
-                    )}
-                    <View style={{ flex: 1 }}>
-                        <Text style={styles.memberName}>{item.user_name}</Text>
-                        {item.data?.transhumanist_ideas ? (
-                            <Text style={styles.memberSnippet} numberOfLines={2}>
-                                {item.data.transhumanist_ideas.replace(/<[^>]+>/g, '')}
-                            </Text>
-                        ) : null}
                     </View>
-                </View>
-            </Card>
-        </TouchableOpacity>
-    );
+                </Card>
+            </TouchableOpacity>
+        );
+    };
     return (
         <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header */}
@@ -193,7 +199,7 @@ export default function CommunityScreen() {
                     }
                 />
             ) : (
-                <View style={styles.chartsContainer}>
+                <ScrollView contentContainerStyle={styles.chartsContainer}>
                     {Platform.OS === 'web' && RadarChart ? (
                         <>
                             <Text style={styles.chartTitle}>Community Wants (avg)</Text>
@@ -237,7 +243,7 @@ export default function CommunityScreen() {
                             Radar charts are available on the web version. On mobile, please view individual profiles.
                         </Text>
                     )}
-                </View>
+                </ScrollView>
             )}
         </SafeAreaView>
     );
@@ -298,6 +304,6 @@ const styles = StyleSheet.create({
     memberName: { color: Colors.text, fontSize: FontSize.md, fontWeight: '600' },
     memberSnippet: { color: Colors.textMuted, fontSize: FontSize.sm, marginTop: 2 },
     empty: { color: Colors.textMuted, textAlign: 'center', marginTop: Spacing.xl },
-    chartsContainer: { flex: 1, padding: Spacing.md },
+    chartsContainer: { padding: Spacing.md, paddingBottom: Spacing.xxl },
     chartTitle: { color: Colors.text, fontSize: FontSize.lg, fontWeight: '700', marginBottom: Spacing.md },
 });

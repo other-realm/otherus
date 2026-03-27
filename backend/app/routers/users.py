@@ -14,6 +14,7 @@ async def list_users(current_user: dict = Depends(get_current_user)):
     users = []
     for key in keys:
         u = await json_get(key)
+        print('user: ',u," key: ",key)
         if u:
             users.append({
                 "id": u["id"],

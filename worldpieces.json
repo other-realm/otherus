@@ -1,26 +1,21 @@
 {
     "app": {
         "type": "application",
-        "label": "Other Us",
+        "label": "World Pieces",
         "value": {
             "main_menu": {
                 "type": "menu",
-                "value": ["Home","World Pieces",["Real Intelligence","N-Back","Diffuse","Guess the #"],"My Pieces",["Started","Complete","Planned","Not Doing"],"People",["Search","Message","Friends","Groups","Discussion","Physical Community","Profile"],"Settings"]
+                "value": ["Home","Pieces",["Started","Complete","Planned","Not Doing"],"Projects",["N-Back","Diffuse","Guess the #"],"People",["Search","Message","Friends","Groups","Discussion","Physical Community","Profile"],"Settings"]
             },
             "body": {
                 "home": {
                     "type": "page",
                     "value": {}
                 },
-                "world_pieces":{
+                "projects":{
                     "type":"page",
                     "title":"Projects",
                     "value":{
-                        "Real_Intelligence":{
-                            "type":"component",
-                            "title":"Real Intelligence",
-                            "label":""
-                        },
                         "n-back":{
                             "type":"component",
                             "title":"N-Back",

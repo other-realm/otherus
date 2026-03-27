@@ -39,7 +39,8 @@ export const Radius = {
 export const styles = {
     body: {
         color: '#FFFFFE', fontFamily: 'sans-serif',
-        fontSize: '15px', lineHeight: '1.7', padding: '0 4px', margin: 0
+        fontSize: '15px', lineHeight: '1.7', padding: '0 4px', margin: 0,
+        overflow: 'scroll'
     },
     a: { color: '#6C63FF' },
     img: { maxWidth: '100%', borderRadius: '8px' },

@@ -1,9 +1,13 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
     View,
     Text,
     StyleSheet,
     Linking,
+    TextInput,
+    TouchableOpacity,
+    ScrollView,
+    Alert,
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { Button } from '../components/shared/Button';
@@ -13,15 +17,33 @@ import { API_BASE } from '../services/api';
 
 export default function LoginScreen() {
     const navigation = useNavigation<any>();
-    const { user } = useAuthStore();
+    const { user, isLoading, error, loginWithEmail, registerWithEmail } = useAuthStore();
+    const [isRegisterMode, setIsRegisterMode] = useState(false);
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+    const [name, setName] = useState('');
+    const [showEmailForm, setShowEmailForm] = useState(false);
+
     useEffect(() => {
         if (user) {
             navigation.replace('Main');
         }
     }, [user]);
-    const handleEmailLogin = async () => {
-        const url = `${API_BASE}/auth/email/login`;
-        await Linking.openURL(url);
+
+    const handleEmailAuth = async () => {
+        if (!email || !password || (isRegisterMode && !name)) {
+            Alert.alert('Error', 'Please fill in all fields');
+            return;
+        }
+        try {
+            if (isRegisterMode) {
+                await registerWithEmail(email, password, name);
+            } else {
+                await loginWithEmail(email, password);
+            }
+        } catch (err: any) {
+            Alert.alert('Error', err.message || 'Authentication failed');
+        }
     };
     const handleGoogleLogin = async () => {
         const url = `${API_BASE}/auth/google/login`;
@@ -31,8 +53,21 @@ export default function LoginScreen() {
         const url = `${API_BASE}/auth/github/login`;
         await Linking.openURL(url);
     };
+    const toggleMode = () => {
+        setIsRegisterMode(!isRegisterMode);
+        setEmail('');
+        setPassword('');
+        setName('');
+    };
+    const toggleEmailForm = () => {
+        setShowEmailForm(!showEmailForm);
+        setEmail('');
+        setPassword('');
+        setName('');
+        setIsRegisterMode(false);
+    };
     return (
-        <View style={styles.container}>
+        <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.hero}>
                 <Text style={styles.logo}>⟁</Text>
                 <Text style={styles.title}>Other Us</Text>
@@ -41,44 +76,100 @@ export default function LoginScreen() {
                 </Text>
             </View>
             <View style={styles.authBox}>
-                <Text style={styles.authTitle}>Signup to get involved!</Text>
-                <Button
-                    title="Signup with Email"
-                    onPress={handleEmailLogin}
-                    style={styles.emailBtn}
-                    target="_self"
-                />
-                <View style={styles.divider}>
-                    <View style={styles.dividerLine} />
-                    <Text style={styles.dividerText}>or</Text>
-                    <View style={styles.dividerLine} />
-                </View>
-                <Button
-                    title="Signup with Google"
-                    onPress={handleGoogleLogin}
-                    style={styles.googleBtn}
-                />
-                <View style={styles.divider}>
-                    <View style={styles.dividerLine} />
-                    <Text style={styles.dividerText}>or</Text>
-                    <View style={styles.dividerLine} />
-                </View>
-                <Button
-                    title="Signup with GitHub"
-                    onPress={handleGitHubLogin}
-                    variant="outline"
-                    style={styles.githubBtn}
-                />
+                <Text style={styles.authTitle}>
+                    {showEmailForm
+                        ? (isRegisterMode ? 'Create Account' : 'Sign In')
+                        : 'Get Started!'}
+                </Text>
+                {showEmailForm ? (
+                    <>
+                        {isRegisterMode && (
+                            <TextInput
+                                style={styles.input}
+                                placeholder="Full Name"
+                                placeholderTextColor={Colors.textMuted}
+                                value={name}
+                                onChangeText={setName}
+                                autoCapitalize="words"
+                            />
+                        )}
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Email"
+                            placeholderTextColor={Colors.textMuted}
+                            value={email}
+                            onChangeText={setEmail}
+                            autoCapitalize="none"
+                            keyboardType="email-address"
+                        />
+                        <TextInput
+                            style={styles.input}
+                            placeholder="Password"
+                            placeholderTextColor={Colors.textMuted}
+                            value={password}
+                            onChangeText={setPassword}
+                            secureTextEntry
+                        />
+                        {error && <Text style={styles.errorText}>{error}</Text>}
+                        <Button
+                            title={isRegisterMode ? 'Create Account' : 'Sign In'}
+                            onPress={handleEmailAuth}
+                            loading={isLoading}
+                            style={styles.emailBtn}
+                        />
+                        <TouchableOpacity onPress={toggleMode}>
+                            <Text style={styles.toggleText}>
+                                {isRegisterMode
+                                    ? 'Already have an account? Sign In'
+                                    : "Don't have an account? Sign Up"}
+                            </Text>
+                        </TouchableOpacity>
+                        <TouchableOpacity onPress={toggleEmailForm} style={styles.backButton}>
+                            <Text style={styles.backText}>← Back to options</Text>
+                        </TouchableOpacity>
+                    </>
+                ) : (
+                    <>
+                        <Button
+                            title="Continue with Email"
+                            onPress={toggleEmailForm}
+                            style={styles.emailBtn}
+                        />
+                        <View style={styles.divider}>
+                            <View style={styles.dividerLine} />
+                            <Text style={styles.dividerText}>or</Text>
+                            <View style={styles.dividerLine} />
+                        </View>
+                        <Button
+                            title="Continue with Google"
+                            onPress={handleGoogleLogin}
+                            style={styles.googleBtn}
+                        />
+                        <View style={styles.divider}>
+                            <View style={styles.dividerLine} />
+                            <Text style={styles.dividerText}>or</Text>
+                            <View style={styles.dividerLine} />
+                        </View>
+                        <Button
+                            title="Continue with GitHub"
+                            onPress={handleGitHubLogin}
+                            variant="outline"
+                            style={styles.githubBtn}
+                        />
+                    </>
+                )}
+
                 <Text style={styles.disclaimer}>
                     By signing in, you agree to our Terms of Service and Privacy Policy.
                 </Text>
             </View>
-        </View>
+        </ScrollView>
     );
 }
+
 const styles = StyleSheet.create({
     container: {
-        flex: 1,
+        flexGrow: 1,
         backgroundColor: Colors.background,
         alignItems: 'center',
         justifyContent: 'center',
@@ -121,6 +212,16 @@ const styles = StyleSheet.create({
         marginBottom: Spacing.lg,
         textAlign: 'center',
     },
+    input: {
+        backgroundColor: Colors.background,
+        borderWidth: 1,
+        borderColor: Colors.border,
+        borderRadius: Radius.md,
+        padding: Spacing.md,
+        marginBottom: Spacing.md,
+        fontSize: FontSize.md,
+        color: Colors.text,
+    },
     emailBtn: {
         backgroundColor: '#890909',
         marginBottom: Spacing.sm,
@@ -146,6 +247,26 @@ const styles = StyleSheet.create({
         color: Colors.textMuted,
         marginHorizontal: Spacing.sm,
         fontSize: FontSize.sm,
+    },
+    toggleText: {
+        color: Colors.primary,
+        textAlign: 'center',
+        marginTop: Spacing.md,
+        fontSize: FontSize.sm,
+    },
+    backButton: {
+        marginTop: Spacing.md,
+        alignItems: 'center',
+    },
+    backText: {
+        color: Colors.textMuted,
+        fontSize: FontSize.sm,
+    },
+    errorText: {
+        color: Colors.error,
+        fontSize: FontSize.sm,
+        marginBottom: Spacing.sm,
+        textAlign: 'center',
     },
     disclaimer: {
         fontSize: FontSize.xs,

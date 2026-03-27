@@ -1,7 +1,7 @@
 """Email/password authentication endpoints."""
 import uuid
 from datetime import datetime, timezone
-from email_validator import validate_email, EmailNotValidError
+from email_validator import validate_email, EmailNotValidError # type: ignore
 from fastapi import APIRouter, HTTPException, status
 from pydantic import BaseModel, EmailStr
 from app.services.redis_service import json_get, json_set
@@ -37,6 +37,7 @@ async def register(req: RegisterRequest):
             detail=f"Invalid email: {str(e)}",
         )
     # Check if user already exists
+
     existing = await json_get(f"user:email:{req.email.lower()}")
     if existing:
         raise HTTPException(
@@ -66,7 +67,7 @@ async def register(req: RegisterRequest):
     }
     # Store user in Redis
     await json_set(f"user:{user_id}", ".", user)
-    await json_set(f"user:email:{req.email.lower()}", ".", {"id": user_id})
+    # await json_set(f"user:email:{req.email.lower()}", ".", {"id": user_id})
     # Generate token
     token = create_access_token({"sub": user_id})
     # Remove sensitive fields before returning
@@ -81,7 +82,8 @@ async def login(req: LoginRequest):
     """Login with email and password."""
     print(f"Login attempt for email: {req.email}")
     # Retrieve user by email
-    user_ref = await json_get(f"user:email:{req.email.lower()}")
+    user_ref = await json_get(f"user:email:{req.email.lower()}")  # This should return something like {"id": "user_id"} if the email exists
+    print("User reference from Redis:",f"user:{req.email.lower()} ", user_ref)
     if not user_ref:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,

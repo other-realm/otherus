@@ -38,7 +38,6 @@ async def create_room(
             room = await json_get(f"room:{existing_room_id}")
             if room:
                 return room
-
     room_id = str(uuid.uuid4())
     now = datetime.now(timezone.utc).isoformat()
     all_members = list(set([current_user["id"]] + body.member_ids))
@@ -51,16 +50,12 @@ async def create_room(
         "last_message": None,
     }
     await json_set(f"room:{room_id}", ".", room)
-
     if body.type == "dm" and len(body.member_ids) == 1:
         other_id = body.member_ids[0]
         members_sorted = sorted([current_user["id"], other_id])
         dm_key = f"dm:{members_sorted[0]}:{members_sorted[1]}"
         await json_set(dm_key, ".", room_id)
-
     return room
-
-
 @router.get("/rooms", response_model=list)
 async def list_my_rooms(current_user: dict = Depends(get_current_user)):
     """List all chat rooms the current user is a member of."""
@@ -72,8 +67,6 @@ async def list_my_rooms(current_user: dict = Depends(get_current_user)):
             rooms.append(room)
     rooms.sort(key=lambda r: (r.get("last_message") or {}).get("created_at", r["created_at"]), reverse=True)
     return rooms
-
-
 @router.get("/rooms/{room_id}", response_model=dict)
 async def get_room(room_id: str, current_user: dict = Depends(get_current_user)):
     room = await json_get(f"room:{room_id}")

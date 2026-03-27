@@ -9,12 +9,14 @@ import {
     ActivityIndicator,
     TouchableOpacity,
     Image,
+    ScrollView,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import { Colors, Spacing, FontSize, Radius } from '../utils/theme';
 import api from '../services/api';
 import { Card } from '../components/shared/Card';
+import ReadOnlyMapField from '../components/form/ReadOnlyMapField';
 
 interface Profile {
     user_id: string;
@@ -66,17 +68,17 @@ export default function ProfileDetailScreen() {
 
     if (loading) {
         return (
-            <View style={styles.container} edges={['top']}>
+            <SafeAreaView style={styles.container} edges={['top']}>
                 <View style={styles.center}>
                     <ActivityIndicator size="large" color={Colors.primary} />
                 </View>
-            </View>
+            </SafeAreaView>
         );
     }
 
     if (error || !profile) {
         return (
-            <View style={styles.container} edges={['top']}>
+            <SafeAreaView style={styles.container} edges={['top']}>
                 <View style={styles.header}>
                     <TouchableOpacity onPress={() => navigation.goBack()}>
                         <Text style={styles.backButton}>← Back</Text>
@@ -85,30 +87,27 @@ export default function ProfileDetailScreen() {
                 <View style={styles.center}>
                     <Text style={styles.errorText}>{error || 'Profile not found'}</Text>
                 </View>
-            </View>
+            </SafeAreaView>
         );
     }
+    // Get the profile image - check profile_image in data first, then fall back to avatar_url
+    const profileImage = profile.data?.profile_image || profile.avatar_url;
+
     return (
-        <View style={styles.container} edges={['top']}>
+        <SafeAreaView style={styles.container} edges={['top']}>
             {/* Header */}
             <View style={styles.header}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
                     <Text style={styles.backButton}>← Back</Text>
                 </TouchableOpacity>
             </View>
-            <View style={styles.content}>
+            <ScrollView contentContainerStyle={styles.content}>
                 {/* Avatar & Name */}
                 <View style={styles.profileHeader}>
-                    {/* Diagnostic logging */}
-                    {console.log('ProfileDetailScreen - avatar_url:', profile.avatar_url)}
-                    {console.log('ProfileDetailScreen - avatar_url type:', typeof profile.avatar_url)}
-                    {console.log('ProfileDetailScreen - avatar_url truthy?:', !!profile.avatar_url)}
-                    {profile.avatar_url ? (
+                    {profileImage ? (
                         <Image
-                            source={{ uri: profile.avatar_url }}
+                            source={{ uri: profileImage }}
                             style={styles.avatar}
-                            onError={(error) => console.log('Image load error:', error.nativeEvent.error)}
-                            onLoad={() => console.log('Image loaded successfully:', profile.avatar_url)}
                         />
                     ) : (
                         <View style={styles.avatarFallback}>
@@ -125,52 +124,49 @@ export default function ProfileDetailScreen() {
                 </TouchableOpacity>
 
                 {/* Profile Data */}
-                {Object.entries(profile.data).map(([key, value]) => (
-                    <Card key={key} style={styles.dataCard}>
-                        <Text style={styles.dataKey}>{key.replace(/_/g, ' ').toUpperCase()}</Text>
-                        {typeof value === 'string' ? (
-                            <Text style={styles.dataValue}>{value.replace(/<[^>]+>/g, '')}</Text>
-                        ) : typeof value === 'object' ? (
-                            <View>
-                                {value.items ? (
-                                    Object.entries(value.items).map(([itemKey, itemValue]: [string, any]) => (
-                                        <View key={itemKey} style={styles.dataItem}>
-                                            <Text style={styles.itemLabel}>{itemValue.label || itemKey}</Text>
-                                            <div style={styles.itemValue}>
-                                                {((itemValue.label || itemKey) == "Profile Image") ? (
-                                                    console.log(itemValue.label),
-                                                    <Image
-                                                        source={itemValue.value}
-                                                        style={styles.itemValue}
-                                                        onError={(error) => console.log('Image load error:', error.nativeEvent.error)}
-                                                        onLoad={() => console.log('Image loaded successfully:', itemValue.value)}
-                                                    />
-                                                ) : (
-                                                    <Text style={styles.itemLabel}>{itemValue.label || itemKey}
-                                                        console.log(itemValue.label),
-                                                        {typeof itemValue === 'object' ? itemValue.value ?? 'N/A' : itemValue}
-                                                    </Text>
-                                                )}
-                                            </div>
-                                        </View>
-                                    ))
-                                ) : (
-                                    <Text style={styles.dataValue}>{JSON.stringify(value, null, 2)}</Text>
-                                )}
-                            </View>
-                        ) : (
-                            <Text style={styles.dataValue}>{String(value)}</Text>
-                        )}
-                    </Card>
-                ))}
-            </View>
-        </View >
+                {Object.entries(profile.data).map(([key, value]) => {
+                    // Check if this is an image field (base64 data URI)
+                    const isImage = typeof value === 'string' && value.startsWith('data:image/');
+                    // Check if this is a map field (has lat and lng properties)
+                    const isMap = typeof value === 'object' && value !== null && 'lat' in value && 'lng' in value;
+                    
+                    return (
+                        <Card key={key} style={styles.dataCard}>
+                            <Text style={styles.dataKey}>{key.replace(/_/g, ' ').toUpperCase()}</Text>
+                            {isImage ? (
+                                <Image source={{ uri: value }} style={styles.profileDataImage} />
+                            ) : isMap ? (
+                                <ReadOnlyMapField lat={value.lat} lng={value.lng} />
+                            ) : typeof value === 'string' ? (
+                                <Text style={styles.dataValue}>{value.replace(/<[^>]+>/g, '')}</Text>
+                            ) : typeof value === 'object' && value !== null ? (
+                                <View>
+                                    {value.items ? (
+                                        Object.entries(value.items).map(([itemKey, itemValue]: [string, any]) => (
+                                            <View key={itemKey} style={styles.dataItem}>
+                                                <Text style={styles.itemLabel}>{itemValue.label || itemKey}</Text>
+                                                <Text style={styles.itemValue}>
+                                                    {typeof itemValue === 'object' ? itemValue.value ?? 'N/A' : itemValue}
+                                                </Text>
+                                            </View>
+                                        ))
+                                    ) : (
+                                        <Text style={styles.dataValue}>{JSON.stringify(value, null, 2)}</Text>
+                                    )}
+                                </View>
+                            ) : (
+                                <Text style={styles.dataValue}>{String(value)}</Text>
+                            )}
+                        </Card>
+                    );
+                })}
+            </ScrollView>
+        </SafeAreaView>
     );
 }
 
 const styles = StyleSheet.create({
-    body: { overflow: 'scroll' },
-    container: { flex: 1, backgroundColor: Colors.background, overflow: 'scroll' },
+    container: { flex: 1, backgroundColor: Colors.background },
     center: { flex: 1, alignItems: 'center', justifyContent: 'center' },
     header: {
         paddingHorizontal: Spacing.md,
@@ -183,8 +179,7 @@ const styles = StyleSheet.create({
         fontSize: FontSize.md,
         fontWeight: '600',
     },
-    content: { flex: 1, overflow: 'scroll' },
-    contentContainer: { padding: Spacing.md, paddingBottom: Spacing.xl, overflow: 'scroll' },
+    content: { padding: Spacing.md, paddingBottom: Spacing.xxl },
     profileHeader: {
         alignItems: 'center',
         marginBottom: Spacing.lg,
@@ -214,6 +209,7 @@ const styles = StyleSheet.create({
     dataCard: { marginBottom: Spacing.md },
     dataKey: { fontSize: FontSize.md, fontWeight: '700', color: Colors.primary, marginBottom: Spacing.sm },
     dataValue: { fontSize: FontSize.md, color: Colors.text, lineHeight: 20 },
+    profileDataImage: { width: 200, height: 200, borderRadius: Radius.md, marginTop: Spacing.sm },
     dataItem: { marginBottom: Spacing.sm, paddingBottom: Spacing.sm, borderBottomWidth: 1, borderBottomColor: Colors.border },
     itemLabel: { fontSize: FontSize.sm, fontWeight: '600', color: Colors.textMuted },
     itemValue: { fontSize: FontSize.md, color: Colors.text, marginTop: Spacing.xs },

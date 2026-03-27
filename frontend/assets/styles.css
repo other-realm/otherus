@@ -1,3 +1,46 @@
+/* Global scrollbar and overflow styles */
+* {
+    /* Enable scrolling with mouse wheel and visible scrollbars */
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: thin;
+    scrollbar-color: rgba(255, 255, 255, 0.2) rgba(0, 0, 0, 0.1);
+}
+
+/* Custom scrollbar styling for webkit browsers */
+*::-webkit-scrollbar {
+    width: 12px;
+    height: 12px;
+}
+
+*::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+}
+
+*::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 6px;
+    border: 2px solid rgba(0, 0, 0, 0.1);
+}
+
+*::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}
+
+/* Ensure root and body allow scrolling */
+html, body, #root {
+    height: 100%;
+    overflow: auto;
+}
+
+/* React Native Web ScrollView support */
+div[style*="overflow: scroll"],
+div[style*="overflow-y: scroll"],
+div[style*="overflow-x: scroll"],
+div[data-testid*="scroll"] {
+    overflow: auto !important;
+    -webkit-overflow-scrolling: touch;
+}
+
 /* Basic editor styles */
 .rich-text-editor {
     .rich-text-editor{
@@ -77,8 +120,5 @@
         border: none;
         border-top: 1px solid var(--gray-2);
         margin: 2rem 0;
-    }
-    body{
-        overflow: scroll;
     }
 }
