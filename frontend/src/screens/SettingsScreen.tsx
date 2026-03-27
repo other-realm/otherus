@@ -7,6 +7,7 @@ import {
     Alert,
     Image,
     TextInput,
+    Platform,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useNavigation } from '@react-navigation/native';
@@ -15,56 +16,82 @@ import { Button } from '../components/shared/Button';
 import { Card } from '../components/shared/Card';
 import { useAuthStore } from '../store/authStore';
 import api from '../services/api';
+function confirmAction(
+    title: string,
+    message: string,
+    onConfirm: () => void,
+    onCancel?: () => void,
+): void {
+    if (Platform.OS !== 'web') {
+        // Native path — Alert.alert works perfectly here.
+        Alert.alert(title, message, [
+            { text: 'Cancel', style: 'cancel', onPress: onCancel },
+            { text: 'Yes, Delete My Account', style: 'destructive', onPress: onConfirm },
+        ]);
+        return;
+    }
 
+    // Web path — use window.confirm (synchronous, always available in browsers).
+    const confirmed = window.confirm(`${title}\n\n${message}`);
+    if (confirmed) {
+        onConfirm();
+    } else {
+        onCancel?.();
+    }
+}
 export default function SettingsScreen() {
     const navigation = useNavigation<any>();
     const { user, logout } = useAuthStore();
     const [ntfyTopic, setNtfyTopic] = useState(user?.ntfy_topic ?? '');
     const [savingNtfy, setSavingNtfy] = useState(false);
     const [deletingAccount, setDeletingAccount] = useState(false);
+
     const handleLogout = async () => {
         await logout();
     };
+
     const handleSaveNtfy = async () => {
         setSavingNtfy(true);
         try {
             await api.put('/users/me/ntfy', { ntfy_topic: ntfyTopic });
-            Alert.alert('Saved', 'Push notification topic updated.');
+            if (Platform.OS === 'web') {
+                window.alert('Push notification topic updated.');
+            } else {
+                Alert.alert('Saved', 'Push notification topic updated.');
+            }
         } catch {
-            Alert.alert('Error', 'Failed to update notification topic.');
+            if (Platform.OS === 'web') {
+                window.alert('Failed to update notification topic.');
+            } else {
+                Alert.alert('Error', 'Failed to update notification topic.');
+            }
         } finally {
             setSavingNtfy(false);
         }
     };
-    
-    const confirmDelete = async () => {
-        console.log("del?");
+
+    const performDelete = async () => {
         setDeletingAccount(true);
         try {
-            console.log("58");
             await api.delete('/profiles/me');
             await logout();
         } catch (err: any) {
-            console.log("61");
-            Alert.alert('Error', err?.response?.data?.detail ?? 'Failed to delete account.');
+            const msg = err?.response?.data?.detail ?? 'Failed to delete account.';
+            if (Platform.OS === 'web') {
+                window.alert(`Error: ${msg}`);
+            } else {
+                Alert.alert('Error', msg);
+            }
             setDeletingAccount(false);
         }
     };
-    
+
     const handleDeleteAccount = () => {
-        Alert.alert(
+        confirmAction(
             '⚠️ Delete Account',
             'This action is permanent and cannot be undone. All your profile data, messages, and account information will be permanently deleted. Are you absolutely sure?',
-            [
-                { text: 'Cancel', style: 'cancel' },
-                {
-                    text: 'Yes, Delete My Account',
-                    style: 'destructive',
-                    onPress: confirmDelete,
-                },
-            ]
+            performDelete,
         );
-        console.log('67');
     };
 
     return (

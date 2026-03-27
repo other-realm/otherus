@@ -25,7 +25,6 @@ interface Experiment {
     created_at: string;
     updated_at: string;
 }
-
 export default function ExperimentsScreen() {
     const navigation = useNavigation<any>();
     const { user } = useAuthStore();
@@ -44,11 +43,8 @@ export default function ExperimentsScreen() {
             setLoading(false);
         }
     };
-
     useEffect(() => { load(); }, []);
-
     const filtered = experiments.filter((e) => e.status === activeTab);
-
     const renderItem = ({ item }: { item: Experiment }) => (
         <TouchableOpacity onPress={() => navigation.navigate('ExperimentDetail', { experimentId: item.id })}>
             <Card style={styles.card}>
