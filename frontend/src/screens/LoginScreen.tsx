@@ -14,7 +14,6 @@ import { Button } from '../components/shared/Button';
 import { Colors, Spacing, FontSize, Radius } from '../utils/theme';
 import { useAuthStore } from '../store/authStore';
 import { API_BASE } from '../services/api';
-
 export default function LoginScreen() {
     const navigation = useNavigation<any>();
     const { user, isLoading, error, loginWithEmail, registerWithEmail } = useAuthStore();
@@ -23,13 +22,11 @@ export default function LoginScreen() {
     const [password, setPassword] = useState('');
     const [name, setName] = useState('');
     const [showEmailForm, setShowEmailForm] = useState(false);
-
     useEffect(() => {
         if (user) {
             navigation.replace('Main');
         }
     }, [user]);
-
     const handleEmailAuth = async () => {
         if (!email || !password || (isRegisterMode && !name)) {
             Alert.alert('Error', 'Please fill in all fields');
@@ -77,7 +74,7 @@ export default function LoginScreen() {
     return (
         <ScrollView contentContainerStyle={styles.container}>
             <View style={styles.hero}>
-                <Text style={styles.logo}>⟁</Text>
+                <Text style={styles.logo}></Text>
                 <Text style={styles.title}>Other Us</Text>
                 <Text style={styles.subtitle}>
                     A community for exploring collaborative research.
@@ -174,7 +171,6 @@ export default function LoginScreen() {
         </ScrollView>
     );
 }
-
 const styles = StyleSheet.create({
     container: {
         flexGrow: 1,

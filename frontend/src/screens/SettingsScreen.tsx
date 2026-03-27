@@ -36,6 +36,21 @@ export default function SettingsScreen() {
             setSavingNtfy(false);
         }
     };
+    
+    const confirmDelete = async () => {
+        console.log("del?")
+        setDeletingAccount(true);
+        try {
+            console.log("58");
+            await api.delete('/profiles/me');
+            await logout();
+        } catch (err: any) {
+            console.log("61");
+            Alert.alert('Error', err?.response?.data?.detail ?? 'Failed to delete account.');
+            setDeletingAccount(false);
+        }
+    };
+    
     const handleDeleteAccount = () => {
         Alert.alert(
             '⚠️ Delete Account',
@@ -49,17 +64,7 @@ export default function SettingsScreen() {
                 },
             ]
         );
-    };
-
-    const confirmDelete = async () => {
-        setDeletingAccount(true);
-        try {
-            await api.delete('/profiles/me');
-            await logout();
-        } catch (err: any) {
-            Alert.alert('Error', err?.response?.data?.detail ?? 'Failed to delete account.');
-            setDeletingAccount(false);
-        }
+        console.log('67');
     };
 
     return (
@@ -67,7 +72,6 @@ export default function SettingsScreen() {
             <View style={styles.header}>
                 <Text style={styles.title}>Settings</Text>
             </View>
-
             <ScrollView contentContainerStyle={styles.content}>
                 {/* Profile summary */}
                 <Card style={styles.profileCard}>

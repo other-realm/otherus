@@ -39,7 +39,7 @@ async def json_get(key: str, path: str = ".") -> Optional[Any]:
     return json.loads(raw)
 async def json_del(key: str, path: str = ".") -> int:
     r = await get_redis()
-    return await r.execute_command("JSON.DEL", key, path)
+    return await r.execute_command("JSON.DEL", key, path) # type: ignore
 async def json_mget(keys: list[str], path: str = ".") -> list[Optional[Any]]:
     if not keys:
         return []
