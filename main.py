@@ -7,6 +7,7 @@ from turtle import home, onclick
 from authlib.common.encoding import json_dumps, json_loads
 from click import prompt
 from httpx import delete
+from matplotlib import colors
 from sympy.abc import F
 from custom_sub_pages import custom_sub_pages, protected 
 from typing import Text, TypedDict
@@ -89,14 +90,15 @@ async def main(request: Request):
         with ui.button(on_click=lambda: ui.navigate.to('/')):
             ui.image('https://www.otherrealm.org/themes/otherrealm/img/About.png').classes('rounded-full w-8')
             ui.tooltip('Home')
-        ui.button(icon='people', on_click=lambda: ui.navigate.to('/search_people')).tooltip('Find People')
-        ui.button(icon='person', on_click=lambda: ui.navigate.to('/profile')).tooltip('Profile')
+        ui.button('Color 🤷', on_click=lambda: (ui.navigate.to('/color_guess'),left_drawer.hide())).tooltip('Color Tests')
         ui.button(icon='logout', on_click=lambda: ui.navigate.to(url+'logout', new_tab=False)).tooltip('Logout')
         # ui.button(on_click=lambda: right_drawer.toggle(), icon='menu')
     with ui.left_drawer(value=False,fixed=True,top_corner=None, bottom_corner=False).style('background-color: #d7e3f4') as left_drawer:
         ui.button('🏠', on_click=lambda: (ui.navigate.to('/'),left_drawer.hide())).tooltip('Home')
-        ui.button('Tests 🧪', on_click=lambda: (ui.navigate.to('/live_studies'),left_drawer.hide())).tooltip('Teset')
+        ui.button('Color 🤷', on_click=lambda: (ui.navigate.to('/color_guess'),left_drawer.hide())).tooltip('Collor Tests')
+        ui.button('Number Test', on_click=lambda: (ui.navigate.to('/live_studies'),left_drawer.hide())).tooltip('Tests')
         ui.button('Test Results 📊', on_click=lambda: (ui.navigate.to('/study_results'),left_drawer.hide())).tooltip('Results')
+        ui.button(icon='people', on_click=lambda: ui.navigate.to('/search_people')).tooltip('Find People')
         ui.button('Profile',on_click=lambda: (ui.navigate.to('/profile'),left_drawer.hide())).tooltip('IC Profile')
         ui.button('Account',on_click=lambda: (ui.navigate.to('/account'),left_drawer.hide())).tooltip('Account')
     with ui.footer(fixed=False).style('background-color: #000080'):
@@ -130,6 +132,7 @@ async def main(request: Request):
             '/home':home_page,
             '/live_studies':live_studies,
             '/study_results':study_results,
+            '/color_guess':color_guess,
             '/profile':survey,
             '/account':account,
             '/search_people':search_people,
@@ -222,7 +225,7 @@ async def google_oauth(request: Request) -> RedirectResponse:
             request.session['user_info'] = app.storage.user
     except (OAuthError, Exception):
         logging.exception('could not authorize access token')
-    return RedirectResponse('/')
+    return RedirectResponse('/color_guess')
 def _is_valid(user_info: dict) -> bool:
     if user_info:
         try:
@@ -279,7 +282,6 @@ async def updateGuess(guess):
     except Exception as ep:
         print('<h1>Error: '+str(ep)+'</h1>')
         return RedirectResponse('/')
-
 async def live_studies():
     ui.page_title('Other Us-Live Studies')
     if 'userGuess' not in app.storage.user:
@@ -300,7 +302,51 @@ async def live_studies():
         kOG.text=str(app.storage.user['knowOrGuess'])
         ui.link('Study Results','/study_results')
     await ui.context.client.connected()
+async def color_guess():
+    ui.page_title('Guess the Color')
+    colors=['red','orange','yellow','green','blue','purple','white','black']
+    svg='''
+    <svg viewBox="0 0 1 1" width="100%"  height="100%"  preserveAspectRatio="none meet" xmlns="http://www.w3.org/2000/svg">
+        <rect x='0' y='0' width="100%" height="50%" fill="purple"></rect>
+        <a href="#red"><rect x='0' y='50%' width="25%" height="25%" fill="red"></rect>        </a>
+        <a href="#orange"><rect x='25%' y='50%' width="25%" height="25%" fill="orange"></rect></a>
+        <a href="#yellow"><rect x='50%' y='50%' width="25%" height="25%" fill="yellow"></rect></a>
+        <a href="#green"><rect x='75%' y='50%' width="25%" height="25%" fill="green"></rect>    </a>
+        <a href="#blue"><rect x='0' y='75%' width="25%" height="25%" fill="blue"></rect>       </a>
+        <a href="#purple"><rect x='25%' y='75%' width="25%" height="25%" fill="purple"></rect>   </a>
+        <a href="#white"><rect x='50%' y='75%' width="25%" height="25%" fill="white"></rect>    </a>
+        <a href="#black"><rect x='75%' y='75%' width="25%" height="25%" fill="black"></rect>    </a>
+    </svg>
+    '''
+    ui.add_css('''
+    svg {  
+      position: fixed;  
+      top: 0;  
+      left: 0;  
+      width: 100vw;   /* Fill viewport width */  
+      height: 100vh;
+    }
+    .h-full {
+        width: 100%;
+        height: 100%;
+    }
+    ''')
+    ui.html(svg,sanitize=False).classes('h-full')
+    ui.html(colors[uuid.uuid4().int%8],sanitize=False).classes('h-full')
 async def study_results():
+    ui.add_css('''
+    svg {
+        position: initial;
+        top: initial;
+        left: initial;
+        width: initial;
+        height: initial;
+    }
+    .h-full {
+        width: 100%;
+        height: 100%;
+    }
+    ''')
     ui.page_title('Other Us-Results')
     with ui.column(wrap=True,align_items='center').classes('w-full'):
         ui.html('<h1>Study Results 📊</h1><div class="center">',sanitize=False)
