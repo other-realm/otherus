@@ -7,7 +7,6 @@ from turtle import home, onclick
 from authlib.common.encoding import json_dumps, json_loads
 from click import prompt
 from httpx import delete
-from matplotlib import colors
 from sympy.abc import F
 from custom_sub_pages import custom_sub_pages, protected 
 from typing import Text, TypedDict
@@ -304,20 +303,19 @@ async def live_studies():
     await ui.context.client.connected()
 async def color_guess():
     ui.page_title('Guess the Color')
-    colors=['red','orange','yellow','green','blue','purple','white','black']
+    colors=['red','orange','yellow','green','blue']
+    # print('color: ',colors[uuid.uuid4().int%8])
     svg='''
     <svg viewBox="0 0 1 1" width="100%"  height="100%"  preserveAspectRatio="none meet" xmlns="http://www.w3.org/2000/svg">
         <rect x='0' y='0' width="100%" height="50%" fill="purple"></rect>
-        <a href="#red"><rect x='0' y='50%' width="25%" height="25%" fill="red"></rect>        </a>
-        <a href="#orange"><rect x='25%' y='50%' width="25%" height="25%" fill="orange"></rect></a>
-        <a href="#yellow"><rect x='50%' y='50%' width="25%" height="25%" fill="yellow"></rect></a>
-        <a href="#green"><rect x='75%' y='50%' width="25%" height="25%" fill="green"></rect>    </a>
-        <a href="#blue"><rect x='0' y='75%' width="25%" height="25%" fill="blue"></rect>       </a>
-        <a href="#purple"><rect x='25%' y='75%' width="25%" height="25%" fill="purple"></rect>   </a>
-        <a href="#white"><rect x='50%' y='75%' width="25%" height="25%" fill="white"></rect>    </a>
-        <a href="#black"><rect x='75%' y='75%' width="25%" height="25%" fill="black"></rect>    </a>
-    </svg>
-    '''
+        '''
+    for i,color in enumerate(colors):
+        yplace=0
+        print(i%4,i/2)
+        if i%len(colors)<(len(colors)/2):
+            yplace=25
+        svg=svg+"<a href='#"+color+"'><rect x='"+str((i*25)%100)+"%' y='"+str(50+(yplace))+"%' width='25%' height='25%' fill='"+color+"'></rect>        </a>"
+    svg+='</svg>'
     ui.add_css('''
     svg {  
       position: fixed;  
@@ -332,7 +330,6 @@ async def color_guess():
     }
     ''')
     ui.html(svg,sanitize=False).classes('h-full')
-    ui.html(colors[uuid.uuid4().int%8],sanitize=False).classes('h-full')
 async def study_results():
     ui.add_css('''
     svg {
