@@ -7,6 +7,7 @@ from turtle import home, onclick
 from authlib.common.encoding import json_dumps, json_loads
 from click import prompt
 from httpx import delete
+from numpy.matlib import rand
 from sympy.abc import F
 from custom_sub_pages import custom_sub_pages, protected 
 from typing import Text, TypedDict
@@ -18,7 +19,7 @@ from authlib.integrations.starlette_client import OAuth, OAuthError
 from fastapi import Request
 from starlette.responses import RedirectResponse
 from starlette.middleware.sessions import SessionMiddleware
-from nicegui import events, app, ui, binding
+from nicegui import events, app, ui, binding,html
 import pandas as pd
 import logging
 import time
@@ -301,35 +302,53 @@ async def live_studies():
         kOG.text=str(app.storage.user['knowOrGuess'])
         ui.link('Study Results','/study_results')
     await ui.context.client.connected()
+async def random_color():
+    app.storage.general['randColor']=uuid.uuid4().int%9
+    # print(app.storage.general['randColor'])
+randomColor=app.timer(5, random_color)
+async def updateColor(colors,color,svg):
+    cc=1
+    for i,color in enumerate(colors):
+        # print(cc)
+        if i!=app.storage.general['randColor']:
+            yplace=0
+            if cc>=(len(colors)/2):
+                yplace=25
+            print('color=',color,'i=',i,'cc=',cc,'cc%4=',cc%4,'cc/2=',cc/2,'x=',str((cc*25)%100),'y=',str(50+(yplace)))
+            svg=svg+"<a href='#"+color+"'><rect x='"+str((cc*25)%100)+"%' y='"+str(50+(yplace))+"%' width='25%' height='25%' fill='"+color+"'></rect></a>"
+            cc+=1 
+        else:
+            print('skipping color: ',color)
+    
 async def color_guess():
     ui.page_title('Guess the Color')
-    colors=['red','orange','yellow','green','blue']
+    # with ui.column(align_items='center'):
+    colors=['red','blue','yellow','orange','green','purple','white','black','brown']
+    chosen=ui.label('').bind_text(app.storage.general,'randColor')#bind_value(randomColor,'randomColor',strict=False)
+    print('chosen: ',chosen.text)
+    colorChosen=colors[chosen.text]
+    uiT=ui.timer(5,partial(updateColor,colors,colorChosen,svg))
     # print('color: ',colors[uuid.uuid4().int%8])
-    svg='''
-    <svg viewBox="0 0 1 1" width="100%"  height="100%"  preserveAspectRatio="none meet" xmlns="http://www.w3.org/2000/svg">
-        <rect x='0' y='0' width="100%" height="50%" fill="purple"></rect>
-        '''
-    for i,color in enumerate(colors):
-        yplace=0
-        print(i%4,i/2)
-        if i%len(colors)<(len(colors)/2):
-            yplace=25
-        svg=svg+"<a href='#"+color+"'><rect x='"+str((i*25)%100)+"%' y='"+str(50+(yplace))+"%' width='25%' height='25%' fill='"+color+"'></rect>        </a>"
+    # del colors[app.storage.general['randColor']]
+    svg='<svg viewBox="0 0 1 1" width="100%"  height="100%"  preserveAspectRatio="none meet" xmlns="http://www.w3.org/2000/svg">'
+    svg+="<rect x='0' y='0' width='100%' height='50%' fill="+colorChosen+"></rect>"
+    svg=svg+
     svg+='</svg>'
     ui.add_css('''
     svg {  
-      position: fixed;  
-      top: 0;  
-      left: 0;  
-      width: 100vw;   /* Fill viewport width */  
-      height: 100vh;
+    position: fixed;  
+    top: 0;  
+    left: 0;  
+    width: 100vw;   /* Fill viewport width */  
+    height: 100vh;
     }
     .h-full {
         width: 100%;
         height: 100%;
     }
     ''')
-    ui.html(svg,sanitize=False).classes('h-full')
+    with html.div():
+        ui.html(svg,sanitize=False).classes('h-full')
 async def study_results():
     ui.add_css('''
     svg {
