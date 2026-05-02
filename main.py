@@ -174,7 +174,7 @@ async def logout(request: Request):
 #     e.sender.enable()
 async def updateRandomGlobal():
     if 'randNum' not in app.storage.general:
-        app.storage.general['randNum']=float(uuid.uuid4().int%1000)
+        app.storage.general['randNum']=float(uuid.uuid4().int%3)
     if 'guessCount' not in app.storage.general:
         app.storage.general['guessCount']=0
     if 'combinedNumber' not in app.storage.general:
@@ -189,19 +189,24 @@ async def updateRandomGlobal():
             "number_of_guesses":app.storage.general['guessCount'],
             "combined_user_number":app.storage.general['combinedUserNumber'],
             "target_number":app.storage.general['randNum']})
-    app.storage.general['randNum']=float(uuid.uuid4().int%1000)
+    app.storage.general['randNum']=int(uuid.uuid4().int%3)
     app.storage.general['guessCount']=0
     app.storage.general['combinedNumber']=False
     app.storage.general['timestamp']=str(datetime.now().strftime('%Y%m%d%H%M%S%f'))
-    print('general: ',app.storage.general['randNum'])
+    app.storage.general['target_idx'] = int(uuid.uuid4().int%2)
+    r.json().set('global:changeCount', Path.root_path(),r.json().get('global:changeCount')+1)
+    # Rotate to the next color
+    # app.storage.general['randNum'] = int(uuid.uuid4().int%3)
+    # Pick a new random target from the bottom two
+    # print('general: ',app.storage.general['randNum'])
 counter = {'value': 0}
+globalTimer=app.timer(5, updateRandomGlobal)
 # globalTimer=app.timer(.1, lambda: counter.update(value=counter['value'] + .1))
 async def save_user_info(user_info):
     if user_info['user_info']['sub']:
         print(user_info)
         user_id='user_info:'+str(user_info['user_info']['sub'])
         r.json().set(user_id,Path.root_path(),{user_info})
-globalTimer=app.timer(60, updateRandomGlobal)
 async def home_page(request: Request):
     user = app.storage.user.get('user_info', {})
     url = await ui.run_javascript(f'new URL(window.location.origin)',timeout=10)
@@ -252,35 +257,36 @@ async def del_account():
     app.storage.user.pop('user_info', None)
     return ui.navigate.to('/')
 @ui.refreshable
-async def updateRandomUser(genT, sub):
-    app.storage.user['knowOrGuess']=float((uuid.uuid4().int%100)/100)
-    local_rand=str(app.storage.general['randNum'])
-    with genT:
-        if app.storage.user['knowOrGuess']<.4:
-            print('general...: ',app.storage.general['randNum'])
-            genT.set_text('You recived the #: '+local_rand+', enter it 👇')
-            genT.set_visibility(True)
-        else:
-            genT.set_text('Enter Your Guess (less than 1000) Here👇')
-            print('new knowOrGuess',counter['value'],app.storage.user['knowOrGuess'])
-    with sub:
-        sub.enable()
+async def updateRandomUser():
+    app.storage.user['userColor']=int((uuid.uuid4().int%2))
+    # local_rand=str(app.storage.general['randNum'])
+    # with genT:
+    #     if app.storage.user['knowOrGuess']<.4:
+    #         print('general...: ',app.storage.general['randNum'])
+    #         genT.set_text('You recived the #: '+local_rand+', enter it 👇')
+    #         genT.set_visibility(True)
+    #     else:
+    #         genT.set_text('Enter Your Guess (less than 3) Here👇')
+    #         print('new knowOrGuess',counter['value'],app.storage.user['knowOrGuess'])
+    # with sub:
+    #     sub.enable()
 async def updateGuess(guess):
-    try:
-        app.storage.user['userGuess']=guess.value
-        app.storage.general['guessCount']=app.storage.general['guessCount']+1
-        if app.storage.general['combinedNumber']:
-            app.storage.general['combinedNumber']=(float(app.storage.general['randNum'])+float(app.storage.user['userGuess']))/2
-            app.storage.general['combinedUserNumber']=(float(app.storage.user['userGuess']))
-        else:
-            app.storage.general['combinedNumber']=(float(app.storage.general['randNum'])+float(app.storage.general['combinedNumber'])+float(app.storage.user['userGuess']))/3
-            app.storage.general['combinedUserNumber']=(float(app.storage.general['combinedUserNumber'])+float(app.storage.user['userGuess']))/2
-        print('Submitted guess',app.storage.user['userGuess']," : ",app.storage.general['guessCount']," : ",app.storage.general['randNum'], ' : ',app.storage.general['combinedNumber'])
-        userkey='guess:'+str(app.storage.user['user_info']['sub'])+':count'+':'+datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
-        r.json().set(userkey, Path.root_path(),{'knowOrGuess':app.storage.user['knowOrGuess'],'guess_value':app.storage.general['guessCount'],'guess':guess.value})
-    except Exception as ep:
-        print('<h1>Error: '+str(ep)+'</h1>')
-        return RedirectResponse('/')
+    print("updateGuess: ",guess.args)
+    # try:
+    app.storage.user['userGuess']=guess.args
+    app.storage.general['guessCount']=app.storage.general['guessCount']+1
+    # if app.storage.general['combinedNumber']:
+    #     app.storage.general['combinedNumber']=(float(app.storage.general['randNum'])+float(app.storage.user['userGuess']))/2
+    #     app.storage.general['combinedUserNumber']=(float(app.storage.user['userGuess']))
+    # else:
+    #     app.storage.general['combinedNumber']=(float(app.storage.general['randNum'])+float(app.storage.general['combinedNumber'])+float(app.storage.user['userGuess']))/3
+    #     app.storage.general['combinedUserNumber']=(float(app.storage.general['combinedUserNumber'])+float(app.storage.user['userGuess']))/2
+    print('Submitted guess',app.storage.user['userGuess']," : ",app.storage.general['guessCount']," : ",app.storage.general['randNum'], ' : ',app.storage.general['combinedNumber'])
+    userkey='guess:'+str(app.storage.user['user_info']['sub'])+':count'+':'+datetime.now().strftime('%Y-%m-%d_%H-%M-%S-%f')
+    r.json().set(userkey, Path.root_path(),{'knowOrGuess':app.storage.user['knowOrGuess'],'guess_value':app.storage.general['guessCount'],'guess':guess.args})
+    # except Exception as ep:
+    #     print('<h1>Error: '+str(ep)+'</h1>')
+    #     return RedirectResponse('/')
 async def live_studies():
     ui.page_title('Other Us-Live Studies')
     if 'userGuess' not in app.storage.user:
@@ -290,7 +296,7 @@ async def live_studies():
     with ui.column(align_items='center'):
         ui.html("<h1 class='center'>What do you think the target # that some people have received is?</h1><br>",sanitize=False)
         genT=ui.label('')#
-        guess=ui.input(placeholder="Enter Guess <1000 Here",validation=lambda value: 'Please only enter #s less than 1000' if not ((str(value).isdigit() and int(value)>=0) and int(value)<1000) else None).props('clearable').classes('row justify-center items-center, makeBig')
+        guess=ui.input(placeholder="Enter Guess <3 Here",validation=lambda value: 'Please only enter #s less than 3' if not ((str(value).isdigit() and int(value)>=0) and int(value)<2) else None).props('clearable').classes('row justify-center items-center, makeBig')
         guess.on('keypress.enter',partial(updateGuess,guess.bind_value(guess,'value')))
         # uG=ui.label(guess.value).bind_text(guess,'value',strict=False)
         sub=ui.button('Submit Guess',on_click=(partial(updateGuess,guess.bind_value(guess,'value')))) #.bind_enabled(app.storage.general,'randNum')
@@ -302,34 +308,102 @@ async def live_studies():
         ui.link('Study Results','/study_results')
     await ui.context.client.connected()
 async def color_guess():
+    sub=app.storage.user['user_info']['sub']
+    # if 'changeCount' not in app.storage.general:
+    #     r.json().set('global:changeCount', Path.root_path(),0)
+    #     app.storage.general['changeCount']=0
+    # Initial setup
+    # app.storage.general['randNum']=int(uuid.uuid4().int%3)
+    colors = ['red', 'blue', 'yellow']
+    app.storage.general['target_idx'] = int(uuid.uuid4().int%2)
+    def get_svg_content():
+        idx = app.storage.general['randNum']
+        active_color = colors[idx]
+        other_colors = [c for c in colors if c != active_color]
+        # The target color is one of the other_colors
+        target_color = other_colors[app.storage.general['target_idx']]
+        svg = (
+            f"<div id='colorRapper'>"
+            f"<svg viewBox='0 0 1 1' width='100%' height='100%' preserveAspectRatio='none meet' xmlns='http://www.w3.org/2000/svg'>"
+            f"<rect x='0' y='0' width='100%' height='50%' fill='{active_color}'></rect>"
+            f"<a id='{other_colors[0]}' onclick=\"emitEvent('color_click', '{other_colors[0]}' )\" style='cursor: pointer;'>"
+            f"<rect x='0%' y='50%' width='50%' height='50%' fill='{other_colors[0]}'></rect></a>"
+            f"<a id='{other_colors[1]}' onclick=\"emitEvent('color_click', '{other_colors[1]}')\" style='cursor: pointer;'>"
+            f"<rect x='50%' y='50%' width='50%' height='50%' fill='{other_colors[1]}'></rect></a>"
+            f"</svg></div>"
+        )
+        return svg, target_color
     ui.page_title('Guess the Color')
-    colors=['red','orange','yellow','green','blue']
-    # print('color: ',colors[uuid.uuid4().int%8])
-    svg='''
-    <svg viewBox="0 0 1 1" width="100%"  height="100%"  preserveAspectRatio="none meet" xmlns="http://www.w3.org/2000/svg">
-        <rect x='0' y='0' width="100%" height="50%" fill="purple"></rect>
-        '''
-    for i,color in enumerate(colors):
-        yplace=0
-        print(i%4,i/2)
-        if i%len(colors)<(len(colors)/2):
-            yplace=25
-        svg=svg+"<a href='#"+color+"'><rect x='"+str((i*25)%100)+"%' y='"+str(50+(yplace))+"%' width='25%' height='25%' fill='"+color+"'></rect>        </a>"
-    svg+='</svg>'
     ui.add_css('''
     svg {  
-      position: fixed;  
-      top: 0;  
-      left: 0;  
-      width: 100vw;   /* Fill viewport width */  
-      height: 100vh;
+        position: fixed;  
+        top: 0;  
+        left: 0;  
+        width: 100vw;   /* Fill viewport width */  
+        height: 100vh;
     }
     .h-full {
         width: 100%;
         height: 100%;
     }
+    .status-label {
+        position: fixed;
+        top: 10px;
+        left: 10px;
+        background: rgba(255, 255, 255, 0.7);
+        padding: 5px 10px;
+        border-radius: 5px;
+        font-family: sans-serif;
+        pointer-events: none;
+    }
     ''')
-    ui.html(svg,sanitize=False).classes('h-full')
+    # Initial content
+    svg_html, target_color = get_svg_content()
+    container = ui.html(svg_html, sanitize=False).classes('h-full')
+    status = ui.label(f'Target: {target_color}').classes('status-label')
+    def handle_click(msg):
+        clicked_color = msg.args
+        idx = app.storage.general['randNum']
+        active_color = colors[idx]
+        other_colors = [c for c in colors if c != active_color]
+        target_color = other_colors[app.storage.general['target_idx']]
+        ui.add_css('''
+            a{
+                pointer-events: none;
+            }
+        ''')
+        if clicked_color == target_color:
+            r.json().set('guess:'+str(sub)+':color_guess:'+str(datetime.now().strftime('%Y%m%d%H%M%S%f')), Path.root_path(), {
+                'timestamp':str(datetime.now().strftime('%Y%m%d%H%M%S%f')),
+                'changeCount':r.json().get('global:changeCount'),
+                'guess':clicked_color,
+                'target':target_color,
+                'result':'correct'
+            })
+            ui.notify(f'Correct! You clicked {clicked_color}', type='positive')
+        else:
+            r.json().set('guess:'+str(sub)+':color_guess:'+str(datetime.now().strftime('%Y%m%d%H%M%S%f')), Path.root_path(), {
+                'timestamp':str(datetime.now().strftime('%Y%m%d%H%M%S%f')),
+                'changeCount':r.json().get('global:changeCount'),
+                'guess':clicked_color,
+                'target':target_color,
+                'result':'wrong'
+            })
+            ui.notify(f'Wrong! You clicked {clicked_color}, but target was {target_color}', type='negative')
+    # Register the event handler for 'color_click'
+    ui.on('color_click', handle_click)
+    def update_color():
+        ui.add_css('''
+            a{
+                pointer-events: initial;
+            }
+        ''')
+        # Update the HTML content and status label
+        svg_html, target_color = get_svg_content()
+        container.content = svg_html
+        status.text = f'Target: {target_color}'
+    # Timer to update every 5 seconds
+    ui.timer(5.0, update_color)
 async def study_results():
     ui.add_css('''
     svg {
